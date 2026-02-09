@@ -1,1 +1,0 @@
-export { GET, DELETE, OPTIONS } from "@/app/api/comment/[id]/route";
