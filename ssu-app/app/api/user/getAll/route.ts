@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import postgres from "postgres";
+import sql from "@/utilities/db";
+import { corsHeaders } from "@/utilities/cors";
 
 // In these routes, we must match the field definitions in
 // the original backend.  This means we have to rename some 
@@ -10,7 +11,6 @@ import postgres from "postgres";
 // We also have to coerce some types (role and _id) to string
 // to match the original backend.
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 type ApiUser = {
   _id: string;
@@ -23,6 +23,14 @@ type ApiUser = {
   profileImage: string | null;
   biography: string;
 };
+
+// Handle preflight requests (CORS)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
 
 export async function GET() {
   try {
@@ -43,9 +51,15 @@ export async function GET() {
     // Redact password values to avoid leaking hashes; delete this map if you must return the stored password.
     const data = rows.map(u => ({ ...u, password: null }));
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }

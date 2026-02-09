@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import postgres from "postgres";
+ 
+import { corsHeaders } from "@/utilities/cors";
+import { reviveDates } from "@/utilities/reviveDates";
 
 // Connect to Postgres
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+import sql from "@/utilities/db";
 
 type ApiPost = {
   _id: string;                // matches frontend expectations
@@ -24,17 +26,29 @@ export async function GET() {
         image_uri            AS "imageUri",
         is_sensitive         AS "isSensitive",
         has_offensive_text   AS "hasOffensiveText",
-        created_at           AS "createdAt"
+        created_at           AS "date"
       FROM posts
       ORDER BY created_at DESC
     `;
 
-    return NextResponse.json(rows, { status: 200 });
+    const posts = reviveDates(rows);
+
+    return NextResponse.json(posts, {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Failed to fetch posts" },
-      { status: 500 }
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
     );
+  }
 }
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
 }
