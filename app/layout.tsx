@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import './ui/global.css';
-import { roboto } from './ui/fonts.ts';
+import { roboto } from './ui/fonts';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

@@ -1,10 +1,9 @@
-import type { Config } from 'tailwindcss'
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+const tailwindConfig = {
   darkMode: 'class',
   content: [
-    './app/**/*.{ts,tsx,js,jsx,mdx}',
-    './components/**/*.{ts,tsx,js,jsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -18,17 +17,9 @@ const config: Config = {
           600: '#2F6FEB',
         },
       },
-      keyframes: {
-        shimmer: {
-          '100%': { transform: 'translateX(100%)' },
-        },
-      },
-      animation: {
-        shimmer: 'shimmer 1.5s infinite',
-      },
     },
   },
   plugins: [require('@tailwindcss/forms')],
-}
+};
 
-export default config
+module.exports = tailwindConfig;

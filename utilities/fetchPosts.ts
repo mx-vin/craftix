@@ -13,7 +13,7 @@ export type Post = {
   date?: string;
 };
 
-import sql from "@/utilities/db";
+import sql from "../utilities/db";
 
 export default async function fetchPosts(query: string): Promise<Post[]> {
   const rows = await sql<Post[]>`
