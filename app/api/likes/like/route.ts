@@ -1,44 +1,24 @@
-import { NextResponse } from "next/server";
- 
-
+import { NextRequest, NextResponse } from "next/server";
 import sql from "@/utilities/db";
+import { corsHeaders } from "@/utilities/cors";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { postId, userId } = await req.json();
+
+  if (!postId || !userId) {
+    return NextResponse.json({ message: "Missing postId or userId" }, { status: 400, headers: corsHeaders });
+  }
+
   try {
-    const body = await req.json();
-    const { userId, postId } = body;
-
-    if (!userId || !postId) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields: userId or postId" },
-        { status: 400 }
-      );
-    }
-
-    const inserted = await sql<[]>`
-      INSERT INTO likes (
-        user_id,
-        post_id,
-        created_at
-      )
-      VALUES (
-        ${userId}::uuid,
-        ${postId}::uuid,
-        NOW()
-      )
-      RETURNING  user_id, post_id, created_at
+    await sql`
+      INSERT INTO post_likes (post_id, user_id)
+      VALUES (${postId}, ${userId})
+      ON CONFLICT DO NOTHING
     `;
 
-    return NextResponse.json({
-      success: true,
-      message: "Post Liked.",
-      data: inserted[0],
-    });
-  } catch (err: any) {
-    console.error("Couldn't like post, error:", err);
-    return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Post liked" }, { status: 201, headers: corsHeaders });
+  } catch (error) {
+    console.error("Like error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500, headers: corsHeaders });
   }
 }

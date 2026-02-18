@@ -2,40 +2,44 @@ import { NextResponse } from "next/server";
 import sql from "@/utilities/db";
 import { corsHeaders } from "@/utilities/cors";
 
-
 type LikeRow = {
-  id: string;
+  id: string; // combined key: userId-postId
   user_id: string;
   post_id: string;
   username: string | null;
   profile_image: string | null;
-  created_at: string | Date;
+  created_at: string;
 };
 
+// GET /api/likes/view-likes/[postId]
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ id: string }> } // NOTE: params is a Promise now
+  ctx: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await ctx.params;
 
+    // Validate UUID
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
-      return NextResponse.json({ error: "Invalid post id" }, { status: 400, headers: corsHeaders });
+      return NextResponse.json(
+        { error: "Invalid post id" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
+    // Fetch all users who liked the post
     const rows = await sql<LikeRow[]>`
       SELECT
-        (l.user_id::text || '-' || l.post_id::text) AS "id",
-        l.user_id::text                             AS "user_id",
-        l.post_id::text                             AS "post_id",
-        u.username                                  AS "username",
-        u.profile_image                             AS "profile_image",
-        l.created_at                                AS "created_at"
-      FROM likes l
-      LEFT JOIN ssu_users u
-        ON u.user_id = l.user_id
-      WHERE l.post_id = ${id}::uuid
-      ORDER BY l.created_at DESC
+        (pl.user_id::text || '-' || pl.post_id::text) AS "id",
+        pl.user_id::text AS "user_id",
+        pl.post_id::text AS "post_id",
+        u.username,
+        u.profile_image,
+        pl.created_at
+      FROM post_likes pl
+      LEFT JOIN users u ON u.id = pl.user_id
+      WHERE pl.post_id = ${id}::uuid
+      ORDER BY pl.created_at DESC
     `;
 
     const likes = rows.map((row) => ({
@@ -57,6 +61,7 @@ export async function GET(
   }
 }
 
+// Handle preflight CORS requests
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
