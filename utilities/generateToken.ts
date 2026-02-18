@@ -3,24 +3,10 @@ import jwt from "jsonwebtoken";
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET!;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
-export const generateAccessToken = (
-  id: string,
-  email?: string,
-  username?: string,
-  role?: string
-) => {
-  return jwt.sign({ id, email, username, role }, ACCESS_TOKEN_SECRET, {
-    expiresIn: "60m",
-  });
-};
+export function generateAccessToken(user: { id: string; email: string; username: string; isAdmin: boolean }) {
+  return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+}
 
-export const generateRefreshToken = (
-  id: string,
-  email?: string,
-  username?: string,
-  role?: string
-) => {
-  return jwt.sign({ id, email, username, role }, REFRESH_TOKEN_SECRET, {
-    expiresIn: "7d",
-  });
-};
+export function generateRefreshToken(user: { id: string; email: string; username: string; isAdmin: boolean }) {
+  return jwt.sign(user, REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+}

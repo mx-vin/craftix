@@ -1,34 +1,24 @@
 import { NextResponse } from "next/server";
- 
-
-import { corsHeaders } from "@/utilities/cors";
-
-// Connect to Postgres
 import sql from "@/utilities/db";
 
-// Define response type
-type ApiHashtag = {
-  hashtag_id: string;
-  hashtag: string;
-  created_at: string | Date;
-};
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const rows = await sql<ApiHashtag[]>`
+    // Fetch all tags from the formula_tags table
+    const rows = await sql`
       SELECT
-        hashtag_id::text AS "hashtag_id",
-        hashtag          AS "hashtag",
-        created_at       AS "created_at"
-      FROM hashtags
-      ORDER BY created_at DESC
+        id,
+        formula_id,
+        game_id,
+        tag
+      FROM formula_tags
+      ORDER BY tag ASC
     `;
 
     return NextResponse.json(rows, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching hashtags:", error);
+  } catch (err: any) {
+    console.error("getAll hashmaps error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch hashtags" },
+      { message: "Server error", error: err.message },
       { status: 500 }
     );
   }
