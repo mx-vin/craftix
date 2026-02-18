@@ -1,0 +1,3 @@
+{
+  "/api/posts/getByHashtag/route": "app/api/posts/getByHashtag/route.js"
+}

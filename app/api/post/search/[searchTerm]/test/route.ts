@@ -1,6 +1,6 @@
 // post/search/[searchTerm].test.ts
 
-import { GET } from "../route";
+import { GET } from "../route.ts";
 
 async function testPostSearch() {
   console.log("=== Test A: Keyword search (path: /f) ===");

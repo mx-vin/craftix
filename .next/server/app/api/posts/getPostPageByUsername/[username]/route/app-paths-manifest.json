@@ -1,0 +1,3 @@
+{
+  "/api/posts/getPostPageByUsername/[username]/route": "app/api/posts/getPostPageByUsername/[username]/route.js"
+}

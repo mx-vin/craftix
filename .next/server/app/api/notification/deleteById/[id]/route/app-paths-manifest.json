@@ -1,0 +1,3 @@
+{
+  "/api/notification/deleteById/[id]/route": "app/api/notification/deleteById/[id]/route.js"
+}

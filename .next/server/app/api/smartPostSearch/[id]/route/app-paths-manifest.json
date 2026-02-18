@@ -1,0 +1,3 @@
+{
+  "/api/smartPostSearch/[id]/route": "app/api/smartPostSearch/[id]/route.js"
+}

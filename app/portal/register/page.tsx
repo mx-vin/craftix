@@ -77,7 +77,7 @@ export default function RegisterPage() {
                 )}
               </button>
             </div>
-            <h1 className={`${montserrat.className} mb-3 text-2xl dark:text-gray-100`}>
+            <h1 className={`${`font-[var(${montserrat})] text-lg`} mb-3 text-2xl dark:text-gray-100`}>
               Register a new account
             </h1>
             <div className="w-full">

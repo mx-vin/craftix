@@ -1,0 +1,3 @@
+{
+  "/api/likes/view-likes/[id]/route": "app/api/likes/view-likes/[id]/route.js"
+}

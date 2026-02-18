@@ -9,15 +9,36 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "15.0.5",
+    "@aws-sdk/client-s3": "^3.992.0",
+    "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.96.0",
+    "bcrypt": "^6.0.0",
+    "clsx": "^2.1.1",
+    "jsonwebtoken": "^9.0.3",
+    "mathjs": "^15.1.1",
+    "natural": "^8.1.0",
+    "next": "16.1.6",
+    "next-auth": "^4.24.13",
     "pg": "^8.16.3",
     "postgres": "^3.4.4",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.24",
     "eslint": "^9.30.1",
-    "eslint-config-next": "^15.3.5"
+    "eslint-config-next": "^15.3.5",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
   }
 }

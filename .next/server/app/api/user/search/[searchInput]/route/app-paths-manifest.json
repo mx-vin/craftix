@@ -1,0 +1,3 @@
+{
+  "/api/user/search/[searchInput]/route": "app/api/user/search/[searchInput]/route.js"
+}

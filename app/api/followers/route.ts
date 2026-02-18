@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 import { corsHeaders } from "@/utilities/cors";
 
 import sql from "@/utilities/db";

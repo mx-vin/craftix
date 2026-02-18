@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-
-import { censorText } from "@/utilities/moderation";
  
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -86,10 +84,6 @@ export async function PUT(req: Request) {
     }
 
     let bioForUpdate = biography;
-    if (bioForUpdate) {
-      const { text } = await censorText(bioForUpdate);
-      bioForUpdate = text;
-    }
 
     // Update user in DB
     const [updatedUser] = await sql`

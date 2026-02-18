@@ -2,10 +2,9 @@ import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 import { invoices, customers, revenue, users } from "../../lib/placeholder-data";
 import sql from "@/utilities/db";
-import type { Sql } from "postgres";
 
-
-async function seedUsers(db: Sql<any>) {
+// USERS
+async function seedUsers(db: any) {
   await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
   await db`
     CREATE TABLE IF NOT EXISTS users (
@@ -16,19 +15,18 @@ async function seedUsers(db: Sql<any>) {
     );
   `;
 
-  await Promise.all(
-    users.map(async (user) => {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
-      await db`
-        INSERT INTO users (id, name, email, password)
-        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
-        ON CONFLICT (id) DO NOTHING;
-      `;
-    })
-  );
+  for (const user of users) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    await db`
+      INSERT INTO users (id, name, email, password)
+      VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
+      ON CONFLICT (id) DO NOTHING;
+    `;
+  }
 }
 
-async function seedCustomers(db: Sql<any>) {
+// CUSTOMERS
+async function seedCustomers(db: any) {
   await db`
     CREATE TABLE IF NOT EXISTS customers (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -38,18 +36,17 @@ async function seedCustomers(db: Sql<any>) {
     );
   `;
 
-  await Promise.all(
-    customers.map(
-      (customer) => db`
-        INSERT INTO customers (id, name, email, image_url)
-        VALUES (${customer.id}, ${customer.name}, ${customer.email}, ${customer.image_url})
-        ON CONFLICT (id) DO NOTHING;
-      `
-    )
-  );
+  for (const customer of customers) {
+    await db`
+      INSERT INTO customers (id, name, email, image_url)
+      VALUES (${customer.id}, ${customer.name}, ${customer.email}, ${customer.image_url})
+      ON CONFLICT (id) DO NOTHING;
+    `;
+  }
 }
 
-async function seedInvoices(db: Sql<any>) {
+// INVOICES
+async function seedInvoices(db: any) {
   await db`
     CREATE TABLE IF NOT EXISTS invoices (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -60,18 +57,17 @@ async function seedInvoices(db: Sql<any>) {
     );
   `;
 
-  await Promise.all(
-    invoices.map(
-      (invoice) => db`
-        INSERT INTO invoices (customer_id, amount, status, date)
-        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
-        ON CONFLICT DO NOTHING;
-      `
-    )
-  );
+  for (const invoice of invoices) {
+    await db`
+      INSERT INTO invoices (customer_id, amount, status, date)
+      VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
+      ON CONFLICT DO NOTHING;
+    `;
+  }
 }
 
-async function seedRevenue(db: Sql<any>) {
+// REVENUE
+async function seedRevenue(db: any) {
   await db`
     CREATE TABLE IF NOT EXISTS revenue (
       month VARCHAR(4) NOT NULL UNIQUE,
@@ -79,17 +75,16 @@ async function seedRevenue(db: Sql<any>) {
     );
   `;
 
-  await Promise.all(
-    revenue.map(
-      (rev) => db`
-        INSERT INTO revenue (month, revenue)
-        VALUES (${rev.month}, ${rev.revenue})
-        ON CONFLICT (month) DO NOTHING;
-      `
-    )
-  );
+  for (const rev of revenue) {
+    await db`
+      INSERT INTO revenue (month, revenue)
+      VALUES (${rev.month}, ${rev.revenue})
+      ON CONFLICT (month) DO NOTHING;
+    `;
+  }
 }
 
+// MAIN GET HANDLER
 export async function GET() {
   try {
     await sql.begin(async (tx) => {

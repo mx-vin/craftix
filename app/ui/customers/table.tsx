@@ -13,7 +13,7 @@ export default async function CustomersTable({
 }) {
   return (
     <div className="w-full">
-      <h1 className={`${montserrat.className} mb-8 text-xl md:text-2xl`}>
+      <h1 className={`${`font-[var(${montserrat})] text-lg`} mb-8 text-xl md:text-2xl`}>
         Customers
       </h1>
       <Search placeholder="Search customers..." />

@@ -1,8 +1,4 @@
-import { Roboto, Montserrat } from 'next/font/google';
- 
-export const roboto = Roboto({ subsets: ['latin'] });
- 
-export const montserrat = Montserrat({
-  weight: ['400', '700'],
-  subsets: ['latin'],
-});
+// app/ui/fonts.ts
+
+export const montserrat = '--font-montserrat';
+export const roboto = '--font-roboto';

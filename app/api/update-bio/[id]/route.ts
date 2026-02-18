@@ -2,27 +2,7 @@ import { NextResponse } from "next/server";
  
 import { corsHeaders } from "@/utilities/cors";
 
-import { censorText } from "@/utilities/moderation";
-
 import sql from "@/utilities/db";
-
-// NOTE: Auth/moderation intentionally commented so route works unauthenticated for now.
-// import jwt from "jsonwebtoken";
-// function verifyToken(req: Request) {
-//   const authHeader = req.headers.get("Authorization");
-//   if (!authHeader?.startsWith("Bearer ")) return null;
-//   const token = authHeader.split(" ")[1];
-//   try {
-//     const payload = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!);
-//     return payload as { id: string };
-//   } catch {
-//     return null;
-//   }
-// }
-// async function moderationMiddleware(_biography: string) {
-//   // Placeholder for content moderation checks
-//   return true;
-// }
 
 // Handle preflight requests (CORS)
 export async function OPTIONS() {
@@ -57,25 +37,12 @@ export async function PUT(
       );
     }
 
-    // Intended auth+moderation (disabled for now):
-    // const userFromToken = verifyToken(req);
-    // if (!userFromToken || userFromToken.id !== id) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
-    // }
-    // const ok = await moderationMiddleware(biography);
-    // if (!ok) {
-    //   return NextResponse.json({ message: "Biography failed moderation" }, { status: 400, headers: corsHeaders });
-    // }
-
-    const { text: censoredBiography, changed } = await censorText(biography);
-    const hasOffensiveText = changed;
-
-    const rows = await sql<{ biography: string }[]>`
-      UPDATE ssu_users
-      SET biography = ${censoredBiography}
-      WHERE user_id = ${id}::uuid
-      RETURNING COALESCE(biography, '') AS biography
-    `;
+const rows = await sql<{ biography: string }[]>`
+  UPDATE ssu_users
+  SET biography = ${biography}
+  WHERE user_id = ${id}::uuid
+  RETURNING COALESCE(biography, '') AS biography
+`;
 
     if (rows.length === 0) {
       return NextResponse.json(

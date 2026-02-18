@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
  
 import { corsHeaders } from "@/utilities/cors";
 
-import { censorText } from "@/utilities/moderation";
-
 import sql from "@/utilities/db";
 
 export async function PUT(req: Request, ctx: { params: Promise<{ postId: string }> }) {
@@ -29,9 +27,6 @@ export async function PUT(req: Request, ctx: { params: Promise<{ postId: string 
       );
     }
 
-    const { text: censoredContent, changed } = await censorText(content);
-    const hasOffensiveText = changed;
-
     // Update post
     const updated = await sql<{
       post_id: string;
@@ -41,7 +36,6 @@ export async function PUT(req: Request, ctx: { params: Promise<{ postId: string 
     }[]>`
       UPDATE posts
       SET 
-        content = ${censoredContent}, 
         is_sensitive = COALESCE(${isSensitive}, is_sensitive)
       WHERE post_id = ${postId}::uuid
       RETURNING post_id, user_id, content, is_sensitive;

@@ -1,0 +1,3 @@
+{
+  "/api/followers/unfollow/route": "app/api/followers/unfollow/route.js"
+}

@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
  
 import { corsHeaders } from "@/utilities/cors";
 
-import { censorText } from "@/utilities/moderation";
-
 import sql from "@/utilities/db";
 
 // Handle preflight requests (CORS)
@@ -31,9 +29,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { username, content, imageUri, isSensitive } = body;
 
-    const { text: censoredContent, changed } = await censorText(content);
-    const hasOffensiveText = changed;
-
     // Step 1: Validate
     if (!username || !content) {
       return NextResponse.json(
@@ -54,10 +49,8 @@ export async function POST(req: Request) {
       )
       SELECT 
         u.user_id,
-        ${censoredContent},
         ${imageUri || null},
         ${isSensitive ?? false},
-        ${hasOffensiveText},
         NOW()
       FROM ssu_users u
       WHERE u.username = ${username}

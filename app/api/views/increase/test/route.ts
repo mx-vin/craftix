@@ -1,5 +1,5 @@
 // app/api/Views/test/CreateViewTest/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 
 // Fixed test UUIDs (from schema_load.sql)
 const TEST_USER_ID = "22222222-2222-2222-2222-222222222222";

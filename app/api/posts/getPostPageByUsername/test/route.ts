@@ -1,5 +1,5 @@
 // app/api/posts/getpostpagebyusername/test/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 
 const TEST_USERNAME = "test_user1";
 

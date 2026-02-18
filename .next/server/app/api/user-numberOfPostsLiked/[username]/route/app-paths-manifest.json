@@ -1,0 +1,3 @@
+{
+  "/api/user-numberOfPostsLiked/[username]/route": "app/api/user-numberOfPostsLiked/[username]/route.js"
+}

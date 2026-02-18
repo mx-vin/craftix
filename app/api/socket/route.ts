@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server.js';
 
 // Simple polling-based socket functionality for Vercel compatibility
 // This replaces Socket.IO with HTTP polling

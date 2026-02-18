@@ -1,7 +1,7 @@
 // searchPost.test.ts
 
-import { GET } from "../route"; // adjust path if needed
-import { NextRequest } from "next/server";
+import { GET } from "../route.ts"; // adjust path if needed
+import { NextRequest } from "next/server.js";
 
 async function testSearchPost() {
   console.log("=== Test 1: Missing postId query ===");

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 
 const TEST_USER_ID = "33333333-3333-3333-3333-333333333333"; // Seeded user who has viewed posts
 

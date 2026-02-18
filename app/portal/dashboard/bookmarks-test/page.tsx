@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default function BookmarksTestPage() {
   return (
     <main>
-      <h1 className={`${montserrat.className} mb-4 text-xl md:text-2xl`}>
+      <h1 className={`${`font-[var(${montserrat})] text-lg`} mb-4 text-xl md:text-2xl`}>
         Bookmarks Test
       </h1>
       <BookmarksTest />

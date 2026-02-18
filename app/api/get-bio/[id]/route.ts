@@ -4,20 +4,6 @@ import { corsHeaders } from "@/utilities/cors";
 
 import sql from "@/utilities/db";
 
-// NOTE: Auth is intentionally commented out so route works unauthenticated for now.
-// import jwt from "jsonwebtoken";
-// function verifyToken(req: Request) {
-//   const authHeader = req.headers.get("Authorization");
-//   if (!authHeader?.startsWith("Bearer ")) return null;
-//   const token = authHeader.split(" ")[1];
-//   try {
-//     const payload = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!);
-//     return payload as { id: string };
-//   } catch {
-//     return null;
-//   }
-// }
-
 // Handle preflight requests (CORS)
 export async function OPTIONS() {
   return new NextResponse(null, {
