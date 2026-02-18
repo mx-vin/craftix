@@ -1,3 +1,0 @@
-{
-  "/api/followers/[username]/route": "app/api/followers/[username]/route.js"
-}

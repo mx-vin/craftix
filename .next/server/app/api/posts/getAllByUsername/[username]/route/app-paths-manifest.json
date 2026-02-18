@@ -1,3 +1,0 @@
-{
-  "/api/posts/getAllByUsername/[username]/route": "app/api/posts/getAllByUsername/[username]/route.js"
-}

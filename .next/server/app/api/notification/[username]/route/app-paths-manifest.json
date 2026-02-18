@@ -1,3 +1,0 @@
-{
-  "/api/notification/[username]/route": "app/api/notification/[username]/route.js"
-}
