@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     return config;
   },
 
+  turbopack: {},
+
   // CORS headers
   async headers() {
     return [
