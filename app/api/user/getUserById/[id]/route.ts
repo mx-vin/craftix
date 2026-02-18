@@ -5,10 +5,10 @@ import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type ApiUser = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string | null;
+  password_hash: string | null;
   date: string | Date;
   role: string;
   imageId: string | null;
@@ -42,10 +42,10 @@ export async function GET(
 
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text            AS "_id",
+        user_id::text            AS "id",
         username                 AS "username",
         email                    AS "email",
-        password                 AS "password",
+        password_hash                 AS "password_hash",
         created_at               AS "date",
         role::text               AS "role",
         NULL::text               AS "imageId",
@@ -63,7 +63,7 @@ export async function GET(
       );
     }
 
-    const user = { ...rows[0], password: null }; // redact password
+    const user = { ...rows[0], password_hash: null }; // redact password_hash
     return NextResponse.json(user, { status: 200, headers: corsHeaders });
   } catch (error) {
     console.error("Error fetching user:", error);

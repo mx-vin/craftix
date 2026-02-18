@@ -1,6 +1,6 @@
 module.exports=[18622,(e,t,r)=>{t.exports=e.x("next/dist/compiled/next-server/app-page-turbo.runtime.prod.js",()=>require("next/dist/compiled/next-server/app-page-turbo.runtime.prod.js"))},56704,(e,t,r)=>{t.exports=e.x("next/dist/server/app-render/work-async-storage.external.js",()=>require("next/dist/server/app-render/work-async-storage.external.js"))},32319,(e,t,r)=>{t.exports=e.x("next/dist/server/app-render/work-unit-async-storage.external.js",()=>require("next/dist/server/app-render/work-unit-async-storage.external.js"))},24725,(e,t,r)=>{t.exports=e.x("next/dist/server/app-render/after-task-async-storage.external.js",()=>require("next/dist/server/app-render/after-task-async-storage.external.js"))},70406,(e,t,r)=>{t.exports=e.x("next/dist/compiled/@opentelemetry/api",()=>require("next/dist/compiled/@opentelemetry/api"))},93695,(e,t,r)=>{t.exports=e.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},54799,(e,t,r)=>{t.exports=e.x("crypto",()=>require("crypto"))},88947,(e,t,r)=>{t.exports=e.x("stream",()=>require("stream"))},46786,(e,t,r)=>{t.exports=e.x("os",()=>require("os"))},22734,(e,t,r)=>{t.exports=e.x("fs",()=>require("fs"))},4446,(e,t,r)=>{t.exports=e.x("net",()=>require("net"))},55004,(e,t,r)=>{t.exports=e.x("tls",()=>require("tls"))},60438,(e,t,r)=>{t.exports=e.x("perf_hooks",()=>require("perf_hooks"))},48964,e=>{"use strict";e.s(["corsHeaders",0,{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, PUT, DELETE, OPTIONS","Access-Control-Allow-Headers":"Content-Type, Authorization"}])},26237,e=>{"use strict";var t=e.i(52716),r=e.i(48964),s=e.i(66151);async function a(){return t.NextResponse.json({},{status:200,headers:r.corsHeaders})}async function n(e,a){try{let{searchTerm:e}=await a.params;if(!e||0===e.trim().length)return t.NextResponse.json({error:"Missing search term in path"},{status:400,headers:r.corsHeaders});let n=decodeURIComponent(e),o=`%${n}%`,i=await s.default`
       SELECT
-        p.post_id::text          AS "_id",
+        p.post_id::text          AS "id",
         p.user_id::text          AS "userId",
         u.username               AS "username",
         p.content                AS "content",
@@ -8,7 +8,7 @@ module.exports=[18622,(e,t,r)=>{t.exports=e.x("next/dist/compiled/next-server/ap
         p.is_sensitive           AS "isSensitive",
         p.has_offensive_text     AS "hasOffensiveText",
         p.created_at             AS "date",
-        p.created_at             AS "createdAt"
+        p.created_at             AS "created_at"
       FROM posts p
       JOIN ssu_users u ON p.user_id = u.user_id
       WHERE p.content ILIKE ${o}

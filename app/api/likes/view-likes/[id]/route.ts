@@ -4,7 +4,7 @@ import { corsHeaders } from "@/utilities/cors";
 
 
 type LikeRow = {
-  _id: string;
+  id: string;
   user_id: string;
   post_id: string;
   username: string | null;
@@ -25,7 +25,7 @@ export async function GET(
 
     const rows = await sql<LikeRow[]>`
       SELECT
-        (l.user_id::text || '-' || l.post_id::text) AS "_id",
+        (l.user_id::text || '-' || l.post_id::text) AS "id",
         l.user_id::text                             AS "user_id",
         l.post_id::text                             AS "post_id",
         u.username                                  AS "username",
@@ -39,7 +39,7 @@ export async function GET(
     `;
 
     const likes = rows.map((row) => ({
-      _id: row._id,
+      id: row.id,
       user_id: row.user_id,
       post_id: row.post_id,
       username: row.username ?? null,

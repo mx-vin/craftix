@@ -48,7 +48,7 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const username = body.username?.trim() || null;
     const email = body.email?.trim() || null;
-    const password = body.password?.trim() || null;
+    const password_hash = body.password_hash?.trim() || null;
     const biography = body.biography?.trim() || null;
 
     // Fetch current user
@@ -76,11 +76,11 @@ export async function PUT(req: Request) {
       }
     }
 
-    // Hash password if provided
-    let hashedPassword = existingUser.password;
-    if (password) {
+    // Hash password_hash if provided
+    let hashedPassword = existingUser.password_hash;
+    if (password_hash) {
       const salt = await bcrypt.genSalt(10);
-      hashedPassword = await bcrypt.hash(password, salt);
+      hashedPassword = await bcrypt.hash(password_hash, salt);
     }
 
     let bioForUpdate = biography;
@@ -91,11 +91,11 @@ export async function PUT(req: Request) {
       SET
         username = COALESCE(${username}, username),
         email = COALESCE(${email}, email),
-        password = ${hashedPassword},
+        password_hash = ${hashedPassword},
         biography = COALESCE(${bioForUpdate}, biography)
       WHERE user_id = ${userId}
       RETURNING
-        user_id::text AS "_id",
+        user_id::text AS "id",
         username,
         email,
         biography

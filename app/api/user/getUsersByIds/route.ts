@@ -31,10 +31,10 @@ const defaultProfileImageUrl =
   "https://ssusocial.s3.amazonaws.com/profilepictures/ProfileIcon.png";
 
   type ApiUser = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string | null;
+  password_hash: string | null;
   date: string | Date;
   role: string;
   imageId: string | null;
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
     // Postgres query
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text           AS "_id",
+        user_id::text           AS "id",
         username                AS "username",
         email                   AS "email",
-        password                AS "password",
+        password_hash                AS "password_hash",
         created_at              AS "date",
         role::text              AS "role",
         NULL::text              AS "imageId",
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
         return {
           ...user,
-          password: null, // redact password
+          password_hash: null, // redact password_hash
           profileImage,
         };
       })

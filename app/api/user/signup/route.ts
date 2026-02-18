@@ -6,10 +6,10 @@ import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type ApiUser = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string | null;
+  password_hash: string | null;
   role: string;
   imageId: string | null;
   profileImage: string | null;
@@ -28,18 +28,18 @@ export async function OPTIONS() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { username, email, password } = body;
+    const { username, email, password_hash } = body;
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password_hash) {
       return NextResponse.json(
-        { message: "Username, email, and password are required" },
+        { message: "Username, email, and password_hash are required" },
         { status: 400, headers: corsHeaders }
       );
     }
 
     // Check username
     const usernameRows = await sql<ApiUser[]>`
-      SELECT user_id::text AS "_id" 
+      SELECT user_id::text AS "id" 
       FROM ssu_users 
       WHERE username = ${username} 
       LIMIT 1
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     // Check email
     const emailRows = await sql<ApiUser[]>`
-      SELECT user_id::text AS "_id" 
+      SELECT user_id::text AS "id" 
       FROM ssu_users 
       WHERE email = ${email} 
       LIMIT 1
@@ -65,26 +65,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash password
+    // Hash password_hash
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password_hash, salt);
 
     // Insert user
     const rows = await sql<ApiUser[]>`
-      INSERT INTO ssu_users (username, email, password)
+      INSERT INTO ssu_users (username, email, password_hash)
       VALUES (${username}, ${email}, ${hashedPassword})
       RETURNING
-        user_id::text AS "_id",
+        user_id::text AS "id",
         username,
         email,
-        password,
+        password_hash,
         role::text AS "role",
         NULL::text AS "imageId",
         NULL::text AS "profileImage",
         '' AS "biography"
     `;
     const newUser = rows[0];
-    const safeUser = { ...newUser, password: null };
+    const safeUser = { ...newUser, password_hash: null };
 
     return NextResponse.json(safeUser, {
       status: 201,

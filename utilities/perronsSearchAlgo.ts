@@ -11,7 +11,7 @@ function toNumber(val: MathNumericType): number {
 
 // Define a Post interface for type safety
 export interface Post {
-  _id: string;
+  id: string;
   [key: string]: any; // allow other dynamic properties (title, content, etc.)
 }
 
@@ -54,8 +54,8 @@ export class PerronSearchAlgorithm {
 
   /** Calculates similarity between two posts based on shared interactions */
   private calculateSimilarity(postA: Post, postB: Post): number {
-    const interactionsA = this.userInteractions[postA._id] || [];
-    const interactionsB = this.userInteractions[postB._id] || [];
+    const interactionsA = this.userInteractions[postA.id] || [];
+    const interactionsB = this.userInteractions[postB.id] || [];
     const commonInteractions = interactionsA.filter(interaction =>
       interactionsB.includes(interaction)
     );

@@ -6,17 +6,17 @@ import { corsHeaders } from "@/utilities/cors";
 // the original backend.  This means we have to rename some 
 // fields (named differently in the new db schema) to match.
 // We also have to return fields that don't exist in the new
-// schema (imageId) as null, and we have to return password
+// schema (imageId) as null, and we have to return password_hash
 // (which we don't store) as null to avoid breaking the frontend.
-// We also have to coerce some types (role and _id) to string
+// We also have to coerce some types (role and id) to string
 // to match the original backend.
 
 
 type ApiUser = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string | null;
+  password_hash: string | null;
   date: string | Date;
   role: string;
   imageId: string | null;
@@ -36,10 +36,10 @@ export async function GET() {
   try {
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text            AS "_id",
+        user_id::text            AS "id",
         username                 AS "username",
         email                    AS "email",
-        password                 AS "password",
+        password_hash                 AS "password_hash",
         created_at               AS "date",
         role::text               AS "role",
         NULL::text               AS "imageId",
@@ -48,8 +48,8 @@ export async function GET() {
       FROM ssu_users
     `;
 
-    // Redact password values to avoid leaking hashes; delete this map if you must return the stored password.
-    const data = rows.map(u => ({ ...u, password: null }));
+    // Redact password_hash values to avoid leaking hashes; delete this map if you must return the stored password_hash.
+    const data = rows.map(u => ({ ...u, password_hash: null }));
 
     return NextResponse.json(data, {
       status: 200,

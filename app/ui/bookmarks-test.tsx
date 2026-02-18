@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 type Post = {
-  _id: string;
+  id: string;
   userId: string;
   username?: string;
   content: string;
@@ -149,7 +149,7 @@ function PostCard({
 
       <div className="mt-4">
         <button
-          onClick={() => onBookmarkClick(post._id)}
+          onClick={() => onBookmarkClick(post.id)}
           disabled={isLoading}
           className={`flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
             isBookmarked
@@ -212,14 +212,14 @@ export default function BookmarksTest() {
         posts.map(async (post) => {
           try {
             const response = await fetch(
-              `/api/bookmarks/manage?user_id=${encodeURIComponent(userId)}&post_id=${encodeURIComponent(post._id)}`
+              `/api/bookmarks/manage?user_id=${encodeURIComponent(userId)}&post_id=${encodeURIComponent(post.id)}`
             );
             if (response.ok) {
               const data = await response.json();
-              statuses[post._id] = Array.isArray(data) && data.length > 0;
+              statuses[post.id] = Array.isArray(data) && data.length > 0;
             }
           } catch (error) {
-            console.error(`Error checking bookmark status for post ${post._id}:`, error);
+            console.error(`Error checking bookmark status for post ${post.id}:`, error);
           }
         })
       );
@@ -270,7 +270,7 @@ export default function BookmarksTest() {
               return {
                 bookmark,
                 post: {
-                  _id: bookmark.post_id,
+                  id: bookmark.post_id,
                   userId: bookmark.user_id,
                   username: bookmark.author,
                   content: bookmark.post_content,
@@ -351,7 +351,7 @@ export default function BookmarksTest() {
                   return {
                     bookmark,
                     post: {
-                      _id: bookmark.post_id,
+                      id: bookmark.post_id,
                       userId: bookmark.user_id,
                       username: bookmark.author,
                       content: bookmark.post_content,
@@ -400,7 +400,7 @@ export default function BookmarksTest() {
                   return {
                     bookmark,
                     post: {
-                      _id: bookmark.post_id,
+                      id: bookmark.post_id,
                       userId: bookmark.user_id,
                       username: bookmark.author,
                       content: bookmark.post_content,
@@ -483,9 +483,9 @@ export default function BookmarksTest() {
         <div>
           {allPosts.map((post) => (
             <PostCard
-              key={post._id}
+              key={post.id}
               post={post}
-              isBookmarked={bookmarkStatuses[post._id] || false}
+              isBookmarked={bookmarkStatuses[post.id] || false}
               onBookmarkClick={handleBookmarkClick}
               isLoading={isLoading}
             />
@@ -498,7 +498,7 @@ export default function BookmarksTest() {
           {bookmarkedPosts.map(({ bookmark, post }) => {
             if (!post) {
               const fallbackPost: Post = {
-                _id: bookmark.post_id,
+                id: bookmark.post_id,
                 userId: bookmark.user_id,
                 username: bookmark.author,
                 content: bookmark.post_content,

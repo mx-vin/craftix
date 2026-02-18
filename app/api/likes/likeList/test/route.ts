@@ -20,7 +20,7 @@ export async function GET() {
       data.some((r: any) => {
         const uid = r.userId ?? r.user_id ?? r["user:Id"];
         const pid = r.postId ?? r.post_id;
-        const date = r.date ?? r.createdAt ?? r.created_at;
+        const date = r.date ?? r.created_at ?? r.created_at;
         if (exp.date) {
           return uid === exp.userId && pid === exp.postId && date === exp.date;
         }

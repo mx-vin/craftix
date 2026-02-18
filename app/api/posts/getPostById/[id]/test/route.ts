@@ -8,7 +8,7 @@ export async function GET() {
     const seededPostId = "33333333-3333-3333-3333-333333333333";
 
     const expected = {
-      _id: seededPostId,
+      id: seededPostId,
       userId: "11111111-1111-1111-1111-111111111111",
       content: "This is a fixed test post for automated test cases.",
       imageUri: null,
@@ -38,7 +38,7 @@ export async function GET() {
     const post = rows[0];
 
     const fieldsMismatch =
-      post.post_id !== expected._id ||
+      post.post_id !== expected.id ||
       post.user_id !== expected.userId ||
       post.content !== expected.content ||
       post.image_uri !== expected.imageUri ||
@@ -58,7 +58,7 @@ export async function GET() {
       message: "Seeded post retrieved successfully",
       data: {
         post: {
-          _id: post.post_id,
+          id: post.post_id,
           userId: post.user_id,
           content: post.content,
           imageUri: post.image_uri,

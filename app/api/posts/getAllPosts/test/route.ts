@@ -4,7 +4,7 @@ export async function GET() {
   try {
     // Expected fixed test post from schema_load.sql
     const expectedPost = {
-      _id: "33333333-3333-3333-3333-333333333333",
+      id: "33333333-3333-3333-3333-333333333333",
       userId: "11111111-1111-1111-1111-111111111111",
       content: "This is a fixed test post for automated test cases.",
       imageUri: null,
@@ -21,7 +21,7 @@ export async function GET() {
       // Look for the fixed seeded post
       const found = data.find(
         (p: any) =>
-          p._id === expectedPost._id &&
+          p.id === expectedPost.id &&
           p.userId === expectedPost.userId &&
           p.content === expectedPost.content &&
           p.imageUri === expectedPost.imageUri &&

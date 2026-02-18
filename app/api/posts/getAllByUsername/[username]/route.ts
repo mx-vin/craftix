@@ -5,7 +5,7 @@ import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type LegacyPost = {
-  _id: string;
+  id: string;
   username: string;
   content: string;
   imageUri: string | null;
@@ -34,7 +34,7 @@ export async function GET(
 
     const rows = await sql<LegacyPost[]>`
       SELECT
-        p.post_id::text                 AS "_id",
+        p.post_id::text                 AS "id",
         u.username                      AS "username",
         p.content                       AS "content",
         p.image_uri                     AS "imageUri",

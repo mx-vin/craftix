@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password_hash: '' });
   const [message, setMessage] = useState('');
   const router = useRouter();
 
@@ -120,18 +120,18 @@ export default function RegisterPage() {
               <div className="mt-4">
                 <label
                   className="mb-3 mt-5 block text-xs font-medium text-gray-900"
-                  htmlFor="password"
+                  htmlFor="password_hash"
                 >
                   Password
                 </label>
                 <input
                   className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-3 text-sm outline-2 placeholder:text-gray-500"
-                  id="password"
-                  type="password"
-                  name="password"
-                  placeholder="Enter any password"
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  id="password_hash"
+                  type="password_hash"
+                  name="password_hash"
+                  placeholder="Enter any password_hash"
+                  value={form.password_hash}
+                  onChange={e => setForm({ ...form, password_hash: e.target.value })}
                   required
                   minLength={6}
                 />

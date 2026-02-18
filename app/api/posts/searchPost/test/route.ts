@@ -25,7 +25,7 @@ async function testSearchPost() {
   );
   res = await GET(req);
   data = await res.json();
-  console.log(data); // expect: post object with _id === existingPostId
+  console.log(data); // expect: post object with id === existingPostId
 }
 
 testSearchPost();

@@ -23,7 +23,7 @@ export const { auth, signIn, signOut } = NextAuth({
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
+        password_hash: { label: 'Password', type: 'password_hash' },
       },
       async authorize(
         credentials: Record<string, string> | undefined
@@ -31,16 +31,16 @@ export const { auth, signIn, signOut } = NextAuth({
         if (!credentials) return null;
 
         const parsed = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
+          .object({ email: z.string().email(), password_hash: z.string().min(6) })
           .safeParse(credentials);
 
         if (!parsed.success) return null;
 
-        const { email, password } = parsed.data;
+        const { email, password_hash } = parsed.data;
         const user = await getUser(email);
         if (!user) return null;
 
-        const passwordsMatch = await bcrypt.compare(password, user.password);
+        const passwordsMatch = await bcrypt.compare(password_hash, user.password_hash);
         if (passwordsMatch) return user;
 
         console.log('Invalid credentials');

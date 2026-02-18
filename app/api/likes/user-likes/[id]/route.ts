@@ -34,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const user = { ...rows[0], password: null }; // redact password
+    const user = { ...rows[0], password_hash: null }; // redact password_hash
     return NextResponse.json(user, { status: 200 });
   } catch (error) {
     console.error("Error fetching user:", error);

@@ -8,7 +8,7 @@ export async function GET() {
   const testUser = {
     username: "test_user_integration",
     email: "test_user_integration@example.com",
-    password: "Password123!",
+    password_hash: "Password123!",
   };
 
   try {
@@ -28,7 +28,7 @@ export async function GET() {
     }
 
     // If already exists, we skip creation and assume it’s fine
-    const userId = signupData._id || "will_fetch_after_login";
+    const userId = signupData.id || "will_fetch_after_login";
 
     // --- TEST LOGIN ---
     const loginRes = await fetch(`${BASE_URL}/api/user/login`, {
@@ -36,7 +36,7 @@ export async function GET() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: testUser.username,
-        password: testUser.password,
+        password_hash: testUser.password_hash,
       }),
     });
     const loginData = await loginRes.json();
@@ -67,7 +67,7 @@ export async function GET() {
 
     const accessToken = loginData.accessToken;
     const loggedInUser = loginData.user;
-    const finalUserId = loggedInUser?._id || userId;
+    const finalUserId = loggedInUser?.id || userId;
 
     // --- TEST DELETE BY ID ---
     const deleteRes = await fetch(

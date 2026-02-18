@@ -11,12 +11,12 @@ async function seedUsersAndPosts() {
     BEGIN
         -- Users
         IF NOT EXISTS (SELECT 1 FROM ssu_users WHERE user_id = fixed_user_id1) THEN
-            INSERT INTO ssu_users (user_id, username, email, password, created_at, role, profile_image, biography)
+            INSERT INTO ssu_users (user_id, username, email, password_hash, created_at, role, profile_image, biography)
             VALUES (fixed_user_id1, 'test_user1', 'test_user1@example.com', 'dummy_password_hash', NOW(), 'user', NULL, 'Auto-created test user.');
         END IF;
 
         IF NOT EXISTS (SELECT 1 FROM ssu_users WHERE user_id = fixed_user_id2) THEN
-            INSERT INTO ssu_users (user_id, username, email, password, created_at, role, profile_image, biography)
+            INSERT INTO ssu_users (user_id, username, email, password_hash, created_at, role, profile_image, biography)
             VALUES (fixed_user_id2, 'test_user2', 'test_user2@example.com', 'dummy_password_hash', NOW(), 'user', NULL, 'Auto-created test user.');
         END IF;
 

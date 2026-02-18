@@ -13,7 +13,7 @@
   }
 
   type ApiUser = {
-    _id: string;
+    id: string;
     username: string;
   }
 
@@ -54,7 +54,7 @@
       // Get the list of usernames this user is following
       const followingRows = await sql<ApiUser[]>`
       SELECT
-        u.user_id::text            AS "_id",
+        u.user_id::text            AS "id",
         u.username                 AS "username"
       FROM followers f
       JOIN ssu_users u ON f.user_id = u.user_id

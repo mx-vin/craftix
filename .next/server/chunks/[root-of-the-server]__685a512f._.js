@@ -15,7 +15,7 @@ module.exports=[18622,(e,t,r)=>{t.exports=e.x("next/dist/compiled/next-server/ap
       FROM ssu_users u
       WHERE u.username = ${t}
       RETURNING
-        post_id::text        AS "_id",
+        post_id::text        AS "id",
         user_id::text        AS "userId",
         ${t}          AS "username",
         content              AS "content",

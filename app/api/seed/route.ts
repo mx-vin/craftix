@@ -11,14 +11,14 @@ async function seedUsers(db: any) {
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       email TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
+      password_hash TEXT NOT NULL
     );
   `;
 
   for (const user of users) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
+    const hashedPassword = await bcrypt.hash(user.password_hash, 10);
     await db`
-      INSERT INTO users (id, name, email, password)
+      INSERT INTO users (id, name, email, password_hash)
       VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
       ON CONFLICT (id) DO NOTHING;
     `;

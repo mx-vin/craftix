@@ -99,17 +99,17 @@ export default function LoginForm() {
           <div className="mt-4">
             <label
               className="mb-3 mt-5 block text-xs font-medium text-gray-900 dark:text-gray-200"
-              htmlFor="password"
+              htmlFor="password_hash"
             >
               Password
             </label>
             <div className="relative">
               <input
                 className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400"
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Enter password"
+                id="password_hash"
+                type="password_hash"
+                name="password_hash"
+                placeholder="Enter password_hash"
                 required
                 minLength={6}
               />

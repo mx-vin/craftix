@@ -5,13 +5,13 @@ import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type ApiPost = {
-  _id: string;
+  id: string;
   userId: string;
   content: string;
   imageUri: string | null;
   isSensitive: boolean;
   hasOffensiveText: boolean;
-  createdAt: string | Date;
+  created_at: string | Date;
 };
 
 // GET /api/post/[id]
@@ -33,7 +33,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     // Fetch only the post
     const rows = await sql<ApiPost[]>`
 SELECT
-  p.post_id::text AS "_id",
+  p.post_id::text AS "id",
   p.user_id::text AS "userId",
   u.username      AS "username",
   p.content       AS "content",

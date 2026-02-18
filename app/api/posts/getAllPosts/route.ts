@@ -7,20 +7,20 @@ import { reviveDates } from "@/utilities/reviveDates";
 import sql from "@/utilities/db";
 
 type ApiPost = {
-  _id: string;                // matches frontend expectations
+  id: string;                // matches frontend expectations
   userId: string;             // foreign key
   content: string;
   imageUri: string | null;
   isSensitive: boolean;
   hasOffensiveText: boolean;
-  createdAt: string | Date;
+  created_at: string | Date;
 };
 
 export async function GET() {
   try {
     const rows = await sql<ApiPost[]>`
       SELECT
-        post_id::text        AS "_id",
+        post_id::text        AS "id",
         user_id::text        AS "userId",
         content              AS "content",
         image_uri            AS "imageUri",

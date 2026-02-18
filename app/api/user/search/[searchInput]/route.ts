@@ -10,10 +10,10 @@ import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type ApiUser = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string | null;
+  password_hash: string | null;
   date: string | Date;
   role: string;
   imageId: string | null;
@@ -45,10 +45,10 @@ export async function GET(
 
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text            AS "_id",
+        user_id::text            AS "id",
         username                 AS "username",
         email                    AS "email",
-        password                 AS "password",
+        password_hash                 AS "password_hash",
         created_at               AS "date",
         role::text               AS "role",
         NULL::text               AS "imageId",
@@ -58,8 +58,8 @@ export async function GET(
       WHERE username ILIKE ${likeTerm}
     `;
 
-    // Redact password to avoid leaking stored hashes
-    const data = rows.map((u) => ({ ...u, password: null }));
+    // Redact password_hash to avoid leaking stored hashes
+    const data = rows.map((u) => ({ ...u, password_hash: null }));
 
     return NextResponse.json(data, { status: 200, headers: corsHeaders });
   } catch (error) {

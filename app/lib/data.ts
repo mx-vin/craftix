@@ -229,19 +229,19 @@ export async function fetchFilteredCustomers(query: string) {
   }
 }
 
-export async function registerUser(name: string, email: string, password: string) {
+export async function registerUser(name: string, email: string, password_hash: string) {
   // Check if user already exists
   const existing = await sql`SELECT * FROM users WHERE email = ${email}`;
   if (existing.length > 0) {
     throw new Error('User already exists');
   }
 
-  // Hash the password
-  const hashed = await bcrypt.hash(password, 10);
+  // Hash the password_hash
+  const hashed = await bcrypt.hash(password_hash, 10);
 
   // Insert new user
   await sql`
-    INSERT INTO users (name, email, password)
+    INSERT INTO users (name, email, password_hash)
     VALUES (${name}, ${email}, ${hashed})
   `;
 }

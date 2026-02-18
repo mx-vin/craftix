@@ -20,13 +20,13 @@ export async function GET(req: Request) {
 
     const rows = await sql`
       SELECT
-        post_id::text AS "_id",
+        post_id::text AS "id",
         user_id::text AS "userId",
         content,
         image_uri AS "imageUri",
         is_sensitive AS "isSensitive",
         has_offensive_text AS "hasOffensiveText",
-        created_at AS "createdAt"
+        created_at AS "created_at"
       FROM posts
       WHERE post_id = ${postId}::uuid
     `;

@@ -10,7 +10,7 @@ module.exports=[18622,(e,t,r)=>{t.exports=e.x("next/dist/compiled/next-server/ap
         WHERE username = ${e}
       )
       SELECT
-        p.post_id::text AS "_id",
+        p.post_id::text AS "id",
         p.content,
         p.image_uri AS "imageUri",
         p.created_at AS "date",

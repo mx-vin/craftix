@@ -4,10 +4,10 @@ import bcrypt from 'bcrypt';
 import sql from '../../../utilities/db';
 
 type User = {
-  _id: string;
+  id: string;
   username: string;
   email: string;
-  password: string;
+  password_hash: string;
   role: string;
   profileImage: string | null;
   biography: string;
@@ -19,10 +19,10 @@ export default NextAuth({
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
+        password_hash: { label: 'Password', type: 'password_hash' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password_hash) return null;
 
         // fetch user from DB
         const rows = await sql<User[]>`
@@ -34,13 +34,13 @@ export default NextAuth({
         const user = rows[0];
         if (!user) return null;
 
-        // verify password
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        // verify password_hash
+        const isValid = await bcrypt.compare(credentials.password_hash, user.password_hash);
         if (!isValid) return null;
 
         // return safe user object
         return {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,

@@ -35,7 +35,7 @@ module.exports=[18622,(e,t,r)=>{t.exports=e.x("next/dist/compiled/next-server/ap
         ON n.action_user_id = au.user_id
       WHERE n.user_id = ${s}
       ORDER BY n.created_at DESC
-    `).map(e=>({_id:e.notification_id,type:e.notification_type,text:e.content,isRead:e.is_read,postId:e.post_id,createdAt:e.created_at,actionUsername:e.action_username}));return m.NextResponse.json({success:!0,notifications:n},{status:200,headers:_.corsHeaders})}catch(e){return console.error("GET /notification error:",e),m.NextResponse.json({success:!1,message:"Server error"},{status:500,headers:_.corsHeaders})}}async function y(e){try{let{id:t,isRead:r,text:s}=await e.json();if(!t)return m.NextResponse.json({success:!1,message:"notification id required"},{status:400,headers:_.corsHeaders});let n={};void 0!==r&&(n.is_read=!!r),void 0!==s&&(n.content=s);let a=await g.default`
+    `).map(e=>({id:e.notification_id,type:e.notification_type,text:e.content,isRead:e.is_read,postId:e.post_id,created_at:e.created_at,actionUsername:e.action_username}));return m.NextResponse.json({success:!0,notifications:n},{status:200,headers:_.corsHeaders})}catch(e){return console.error("GET /notification error:",e),m.NextResponse.json({success:!1,message:"Server error"},{status:500,headers:_.corsHeaders})}}async function y(e){try{let{id:t,isRead:r,text:s}=await e.json();if(!t)return m.NextResponse.json({success:!1,message:"notification id required"},{status:400,headers:_.corsHeaders});let n={};void 0!==r&&(n.is_read=!!r),void 0!==s&&(n.content=s);let a=await g.default`
       UPDATE notifications
       SET ${(0,g.default)(n)}
       WHERE notification_id = ${t}::uuid

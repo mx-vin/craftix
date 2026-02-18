@@ -13,14 +13,14 @@ export async function OPTIONS() {
 }
 
 type ApiPost = {
-  _id: string;
+  id: string;
   userId: string;
   username: string;
   content: string;
   imageUri: string | null;
   isSensitive: boolean;
   hasOffensiveText: boolean;
-  createdAt: string | Date;
+  created_at: string | Date;
 };
 
 // POST /api/posts
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       FROM ssu_users u
       WHERE u.username = ${username}
       RETURNING
-        post_id::text        AS "_id",
+        post_id::text        AS "id",
         user_id::text        AS "userId",
         ${username}          AS "username",
         content              AS "content",

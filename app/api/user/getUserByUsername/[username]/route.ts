@@ -22,7 +22,7 @@ export async function GET(req: Request, context: any) {
   try {
     const rows = await sql`
       SELECT
-        user_id::text            AS "_id",
+        user_id::text            AS "id",
         username                 AS "username",
         profile_image            AS "profileImage",
         COALESCE(biography, '')  AS "biography"
@@ -40,7 +40,7 @@ export async function GET(req: Request, context: any) {
     const user = rows[0];
     return NextResponse.json(
       {
-        _id: user._id,
+        id: user.id,
         username: user.username,
         biography: user.biography,
         profileImage: user.profileImage || defaultProfileImageUrl,

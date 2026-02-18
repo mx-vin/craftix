@@ -7,10 +7,10 @@ import { generateAccessToken, generateRefreshToken } from "@/utilities/generateT
 import sql from "@/utilities/db";
 
 type ApiUser = {
-  _id: string;
+  id: string;
   username: string; 
   email: string;
-  password: string | null;
+  password_hash: string | null;
   role: string;
   imageId: string | null;
   profileImage: string | null;
@@ -26,16 +26,16 @@ export async function OPTIONS(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { username, password } = body;
+    const { username, password_hash } = body;
 
     console.log("=== Login attempt ===");
     console.log("Received username:", username);
-    console.log("Received password (length):", password?.length, "value:", `"${password}"`);
+    console.log("Received password_hash (length):", password_hash?.length, "value:", `"${password_hash}"`);
 
-    if (!username || !password) {
-      console.log("Missing username or password");
+    if (!username || !password_hash) {
+      console.log("Missing username or password_hash");
       return NextResponse.json(
-        { message: "Username and password are required" },
+        { message: "Username and password_hash are required" },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -43,10 +43,10 @@ export async function POST(req: Request) {
     // Fetch user by username
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text           AS "_id",
+        user_id::text           AS "id",
         username,
         email,
-        password,
+        password_hash,
         role::text              AS "role",
         NULL::text              AS "imageId",
         profile_image           AS "profileImage",
@@ -61,35 +61,35 @@ export async function POST(req: Request) {
     if (rows.length === 0) {
       console.log("No user found with username:", username);
       return NextResponse.json(
-        { message: "Username or password does not exist, try again" },
+        { message: "Username or password_hash does not exist, try again" },
         { status: 401, headers: corsHeaders }
       );
     }
 
     const user = rows[0];
 
-    if (!user.password) {
-      console.log("User has no password set");
+    if (!user.password_hash) {
+      console.log("User has no password_hash set");
       return NextResponse.json(
-        { message: "Invalid password" },
+        { message: "Invalid password_hash" },
         { status: 401, headers: corsHeaders },
       );
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password_hash, user.password_hash);
     console.log("Password match result:", isValidPassword);
 
     if (!isValidPassword) {
       console.log("Password does not match for user:", username);
       return NextResponse.json(
-        { message: "Username or password does not exist, try again" },
+        { message: "Username or password_hash does not exist, try again" },
         { status: 401, headers: corsHeaders }
       );
     }
 
-    // ✅ Use 'id' instead of '_id'
+    // ✅ Use 'id' instead of 'id'
     const safeUser = {
-      id: user._id,
+      id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,

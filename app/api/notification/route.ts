@@ -149,12 +149,12 @@ export async function GET(req: Request) {
 
     // FE mapping
     const notifications = rows.map((n) => ({
-      _id: n.notification_id,
+      id: n.notification_id,
       type: n.notification_type,
       text: n.content,
       isRead: n.is_read,
       postId: n.post_id,
-      createdAt: n.created_at,
+      created_at: n.created_at,
       actionUsername: n.action_username,
     }));
 

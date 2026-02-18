@@ -5,7 +5,7 @@ import { corsHeaders } from "@/utilities/cors"; // ✅ add shared CORS headers
 import sql from "@/utilities/db";
 
 type ApiPost = {
-  _id: string;
+  id: string;
   userId: string;
   username: string;
   content: string;
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
     const posts = await sql<ApiPost[]>`
       SELECT 
-        p.post_id::text           AS "_id",
+        p.post_id::text           AS "id",
         p.user_id::text           AS "userId",
         u.username                AS "username",
         p.content                 AS "content",

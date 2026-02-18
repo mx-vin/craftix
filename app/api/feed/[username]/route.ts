@@ -41,7 +41,7 @@ export async function GET(
         WHERE username = ${username}
       )
       SELECT
-        p.post_id::text AS "_id",
+        p.post_id::text AS "id",
         p.content,
         p.image_uri AS "imageUri",
         p.created_at AS "date",

@@ -60,14 +60,14 @@ export async function GET(
     `;
 
     // FE EXPECTS THESE EXACT FIELDS:
-    // _id, type, text, isRead, postId
+    // id, type, text, isRead, postId
     const notifications = rows.map((n) => ({
-      _id: n.notification_id,
+      id: n.notification_id,
       type: n.notification_type,   // "like", "comment", "follow"
       text: n.content,             // Notification text
       isRead: n.is_read,
       postId: n.post_id,
-      createdAt: n.created_at,
+      created_at: n.created_at,
       actionUsername: n.action_username,
     }));
 
