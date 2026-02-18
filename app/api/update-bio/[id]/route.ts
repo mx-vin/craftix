@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
-
 import sql from "@/utilities/db";
 
-// Handle preflight requests (CORS)
+// Preflight CORS
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// PUT /api/user/update-bio/[id]
+// PUT /api/update-bio/[id]
+// Expects JSON body: { biography: string }
 export async function PUT(
   req: Request,
   ctx: { params: Promise<{ id: string }> }
@@ -20,6 +16,7 @@ export async function PUT(
   try {
     const { id } = await ctx.params;
 
+    // Validate UUID
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json(
         { error: "Invalid user id" },
@@ -37,12 +34,13 @@ export async function PUT(
       );
     }
 
-const rows = await sql<{ biography: string }[]>`
-  UPDATE ssu_users
-  SET biography = ${biography}
-  WHERE user_id = ${id}::uuid
-  RETURNING COALESCE(biography, '') AS biography
-`;
+    // Update user biography
+    const rows = await sql<{ biography: string }[]>`
+      UPDATE users
+      SET biography = ${biography}
+      WHERE id = ${id}::uuid
+      RETURNING COALESCE(biography, '') AS biography
+    `;
 
     if (rows.length === 0) {
       return NextResponse.json(
@@ -55,10 +53,10 @@ const rows = await sql<{ biography: string }[]>`
       { biography: rows[0].biography },
       { status: 200, headers: corsHeaders }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating biography:", error);
     return NextResponse.json(
-      { message: "Error updating biography" },
+      { message: "Error updating biography", error: String(error?.message ?? error) },
       { status: 500, headers: corsHeaders }
     );
   }

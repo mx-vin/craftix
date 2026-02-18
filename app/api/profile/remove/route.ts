@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
-
 import sql from "@/utilities/db";
 
-// Handle preflight requests (CORS)
+// Preflight for CORS
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// Expects JSON body { user_id: string }
+// POST /api/profile/remove
+// Expects: { user_id: string }
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -25,10 +21,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const userRows = await sql<{ user_id: string; profile_image: string | null }[]>`
-      SELECT user_id::text, profile_image
-      FROM ssu_users
-      WHERE user_id = ${user_id}::uuid
+    const userRows = await sql<{ id: string; profile_image: string | null }[]>`
+      SELECT id::text, profile_image
+      FROM users
+      WHERE id = ${user_id}::uuid
       LIMIT 1
     `;
 
@@ -43,25 +39,19 @@ export async function POST(req: Request) {
       "https://ssusocial.s3.amazonaws.com/profilepictures/ProfileIcon.png";
 
     await sql`
-      UPDATE ssu_users
+      UPDATE users
       SET profile_image = ${DEFAULT_PROFILE_IMAGE}
-      WHERE user_id = ${user_id}::uuid
+      WHERE id = ${user_id}::uuid
     `;
 
     return NextResponse.json(
-      {
-        message: "Profile image removed successfully",
-        profileImage: DEFAULT_PROFILE_IMAGE,
-      },
+      { message: "Profile image removed successfully", profileImage: DEFAULT_PROFILE_IMAGE },
       { status: 200, headers: corsHeaders }
     );
   } catch (error: any) {
     console.error("Error removing profile image:", error);
     return NextResponse.json(
-      {
-        message: "Failed to remove profile image",
-        error: String(error?.message ?? error),
-      },
+      { message: "Failed to remove profile image", error: String(error?.message ?? error) },
       { status: 500, headers: corsHeaders }
     );
   }

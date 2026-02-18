@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
-
 import sql from "@/utilities/db";
 
-// Handle preflight requests (CORS)
+// Preflight for CORS
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// Expects JSON body: { user_id: string, image_url: string }
+// POST /api/profile/upload
+// Expects: { user_id: string, image_url: string }
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -31,7 +27,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Basic URL guard (keep it lightweight; real validation can be stricter)
     const isHttpUrl = /^(https?:)\/\//i.test(image_url);
     if (!isHttpUrl) {
       return NextResponse.json(
@@ -40,11 +35,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ensure the user exists
-    const userRows = await sql<{ user_id: string; profile_image: string | null }[]>`
-      SELECT user_id::text, profile_image
-      FROM ssu_users
-      WHERE user_id = ${user_id}::uuid
+    const userRows = await sql<{ id: string; profile_image: string | null }[]>`
+      SELECT id::text, profile_image
+      FROM users
+      WHERE id = ${user_id}::uuid
       LIMIT 1
     `;
     if (userRows.length === 0) {
@@ -54,19 +48,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Update profile image
     const updated = await sql<{ profile_image: string | null }[]>`
-      UPDATE ssu_users
+      UPDATE users
       SET profile_image = ${image_url}
-      WHERE user_id = ${user_id}::uuid
+      WHERE id = ${user_id}::uuid
       RETURNING profile_image
     `;
 
     return NextResponse.json(
-      {
-        message: "Profile image updated successfully",
-        profileImage: updated?.[0]?.profile_image ?? image_url,
-      },
+      { message: "Profile image updated successfully", profileImage: updated?.[0]?.profile_image ?? image_url },
       { status: 200, headers: corsHeaders }
     );
   } catch (error: any) {

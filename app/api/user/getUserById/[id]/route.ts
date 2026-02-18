@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
-
 import sql from "@/utilities/db";
 
 type ApiUser = {
@@ -9,30 +7,25 @@ type ApiUser = {
   username: string;
   email: string;
   password_hash: string | null;
-  date: string | Date;
   role: string;
-  imageId: string | null;
   profileImage: string | null;
   biography: string;
+  created_at: string | Date;
 };
 
-// Handle preflight requests (CORS)
+// Handle preflight requests
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
 
-// GET /api/user/getUserById/[id]
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ id: string }> }   // NOTE: params is a Promise now
+  ctx: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await ctx.params;
 
-    // Validate UUID format
+    // Validate UUID
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json(
         { error: "Invalid user id" },
@@ -42,33 +35,33 @@ export async function GET(
 
     const rows = await sql<ApiUser[]>`
       SELECT
-        user_id::text            AS "id",
-        username                 AS "username",
-        email                    AS "email",
-        password_hash                 AS "password_hash",
-        created_at               AS "date",
-        role::text               AS "role",
-        NULL::text               AS "imageId",
-        profile_image            AS "profileImage",
-        COALESCE(biography, '')  AS "biography"
-      FROM ssu_users
-      WHERE user_id = ${id}::uuid
+        id::text,
+        username,
+        email,
+        password_hash,
+        role::text AS role,
+        profile_image AS "profileImage",
+        COALESCE(biography, '') AS biography,
+        created_at
+      FROM users
+      WHERE id = ${id}::uuid
       LIMIT 1
     `;
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       return NextResponse.json(
-        { error: "User not found" },
+        { message: "User not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
-    const user = { ...rows[0], password_hash: null }; // redact password_hash
+    const user = { ...rows[0], password_hash: null }; // redact password hash
+
     return NextResponse.json(user, { status: 200, headers: corsHeaders });
-  } catch (error) {
-    console.error("Error fetching user:", error);
+  } catch (error: any) {
+    console.error("Error fetching user by ID:", error);
     return NextResponse.json(
-      { error: "Failed to fetch user" },
+      { message: "Failed to fetch user", error: error?.message ?? error },
       { status: 500, headers: corsHeaders }
     );
   }
