@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
 import { reviveDates } from "@/utilities/reviveDates";
-
-// Connect to Postgres
 import sql from "@/utilities/db";
 
 type ApiPost = {
-  id: string;                // matches frontend expectations
-  userId: string;             // foreign key
+  id: string;
+  userId: string;
   content: string;
   imageUri: string | null;
   isSensitive: boolean;
@@ -16,39 +13,33 @@ type ApiPost = {
   created_at: string | Date;
 };
 
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET() {
   try {
     const rows = await sql<ApiPost[]>`
       SELECT
-        post_id::text        AS "id",
-        user_id::text        AS "userId",
-        content              AS "content",
-        image_uri            AS "imageUri",
-        is_sensitive         AS "isSensitive",
-        has_offensive_text   AS "hasOffensiveText",
-        created_at           AS "date"
+        id::text        AS "id",
+        user_id::text   AS "userId",
+        content,
+        image_uri       AS "imageUri",
+        is_sensitive    AS "isSensitive",
+        has_offensive_text AS "hasOffensiveText",
+        created_at
       FROM posts
       ORDER BY created_at DESC
     `;
 
     const posts = reviveDates(rows);
 
-    return NextResponse.json(posts, {
-      status: 200,
-      headers: corsHeaders,
-    });
-  } catch (error) {
-    console.error("Error fetching posts:", error);
+    return NextResponse.json(posts, { status: 200, headers: corsHeaders });
+  } catch (err) {
+    console.error("Error fetching all posts:", err);
     return NextResponse.json(
-      { error: "Failed to fetch posts" },
-      {
-        status: 500,
-        headers: corsHeaders,
-      }
+      { error: "Failed to fetch all posts" },
+      { status: 500, headers: corsHeaders }
     );
   }
-}
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
 }

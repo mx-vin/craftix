@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
- 
-import { corsHeaders } from "@/utilities/cors"; // ✅ add shared CORS headers
-
+import { corsHeaders } from "@/utilities/cors";
 import sql from "@/utilities/db";
 
 type ApiPost = {
@@ -12,10 +10,9 @@ type ApiPost = {
   imageUri: string | null;
   isSensitive: boolean;
   hasOffensiveText: boolean;
-  date: string | Date;
+  created_at: string;
 };
 
-// ✅ Allow preflight CORS requests
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
@@ -23,38 +20,31 @@ export async function OPTIONS() {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-
-    const INITIAL_PAGE = 1;
-    const DEFAULT_POSTS_PER_PAGE = 10;
-
-    const page = parseInt(searchParams.get("page") || `${INITIAL_PAGE}`);
-    const postsPerPage = parseInt(
-      searchParams.get("postPerPage") || `${DEFAULT_POSTS_PER_PAGE}`
-    );
+    const page = parseInt(searchParams.get("page") || "1");
+    const postsPerPage = parseInt(searchParams.get("postsPerPage") || "10");
     const offset = (page - 1) * postsPerPage;
 
-    const posts = await sql<ApiPost[]>`
-      SELECT 
-        p.post_id::text           AS "id",
-        p.user_id::text           AS "userId",
-        u.username                AS "username",
-        p.content                 AS "content",
-        p.image_uri               AS "imageUri",
-        p.is_sensitive            AS "isSensitive",
-        p.has_offensive_text      AS "hasOffensiveText",
-        p.created_at              AS "date"
+    const rows = await sql<ApiPost[]>`
+      SELECT
+        p.id::text          AS "id",
+        p.user_id::text     AS "userId",
+        u.username          AS "username",
+        p.content           AS "content",
+        p.image_uri         AS "imageUri",
+        p.is_sensitive      AS "isSensitive",
+        p.has_offensive_text AS "hasOffensiveText",
+        p.created_at
       FROM posts p
-      JOIN ssu_users u ON p.user_id = u.user_id
+      JOIN users u ON p.user_id = u.id
       ORDER BY p.created_at DESC
-      OFFSET ${offset} LIMIT ${postsPerPage};
+      OFFSET ${offset} LIMIT ${postsPerPage}
     `;
 
-    // Return the plain array so legacy clients (Discover page) can call posts.map(...)
-    return NextResponse.json(posts, { status: 200, headers: corsHeaders });
+    return NextResponse.json(rows, { status: 200, headers: corsHeaders });
   } catch (err: any) {
-    console.error("Error fetching posts:", err);
+    console.error("Error fetching paginated posts:", err);
     return NextResponse.json(
-      { success: false, message: "Error fetching posts", error: err.message },
+      { success: false, message: "Error fetching paginated posts", error: err.message },
       { status: 500, headers: corsHeaders }
     );
   }

@@ -1,68 +1,31 @@
 import { NextResponse } from "next/server";
- 
 import { corsHeaders } from "@/utilities/cors";
-
 import sql from "@/utilities/db";
 
 export async function PUT(req: Request, ctx: { params: Promise<{ postId: string }> }) {
   try {
-    console.log("=== UpdatePost Route Called ===");
-    console.log("Request method:", req.method);
-
-    // Await dynamic route params
     const { postId } = await ctx.params;
-    console.log("Param postId:", postId);
-
     const body = await req.json();
-    console.log("Body received:", body);
-
-    const content = body.content;
-    const isSensitive = body.isSensitive;
+    const { content, isSensitive } = body;
 
     if (!postId || !content) {
-      console.warn("Missing required fields:", { postId, content });
-      return NextResponse.json(
-        { error: "Missing required fields: postId or content" },
-        { status: 400, headers: corsHeaders }
-      );
+      return NextResponse.json({ error: "Missing postId or content" }, { status: 400, headers: corsHeaders });
     }
 
-    // Update post
-    const updated = await sql<{
-      post_id: string;
-      user_id: string;
-      content: string;
-      is_sensitive: boolean;
-    }[]>`
+    const updated = await sql`
       UPDATE posts
       SET 
+        content = ${content},
         is_sensitive = COALESCE(${isSensitive}, is_sensitive)
-      WHERE post_id = ${postId}::uuid
-      RETURNING post_id, user_id, content, is_sensitive;
+      WHERE id = ${postId}::uuid
+      RETURNING id, user_id, content, is_sensitive;
     `;
 
-    console.log("Database update result:", updated);
+    if (!updated.length) return NextResponse.json({ error: "Post not found" }, { status: 404, headers: corsHeaders });
 
-    if (updated.length === 0) {
-      console.warn("Post not found in database:", postId);
-      return NextResponse.json(
-        { error: "Post not found" },
-        { status: 404, headers: corsHeaders }
-      );
-    }
-
-    console.log("Post updated successfully:", updated[0]);
-    return NextResponse.json({
-      success: true,
-      message: "Post updated successfully",
-      post: updated[0],
-    });
-
+    return NextResponse.json({ success: true, message: "Post updated", post: updated[0] }, { status: 200, headers: corsHeaders });
   } catch (err: any) {
-    console.error("Update post error:", err);
-    return NextResponse.json(
-      { success: false, message: "Failed to update post" },
-      { status: 500, headers: corsHeaders }
-    );
+    console.error("Error updating post:", err);
+    return NextResponse.json({ success: false, message: "Failed to update post", error: err.message }, { status: 500, headers: corsHeaders });
   }
 }
