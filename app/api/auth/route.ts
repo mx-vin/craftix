@@ -1,12 +1,12 @@
 // app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import sql from "@/utilities/db";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 
-// --- DB user type ---
+// DB User type
 type DBUser = {
   id: string;
   username: string;
@@ -17,7 +17,7 @@ type DBUser = {
   biography: string;
 };
 
-// --- Extend JWT for custom fields ---
+// Extend JWT type
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
@@ -25,7 +25,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-// --- Extend Session user to include DB fields ---
+// Extend Session type
 declare module "next-auth" {
   interface Session {
     user: {
@@ -40,7 +40,6 @@ declare module "next-auth" {
   }
 }
 
-// --- NextAuth configuration ---
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
@@ -54,13 +53,12 @@ const handler = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Fetch user from DB
         const rows = await sql<DBUser[]>`
           SELECT * FROM ssu_users WHERE email = ${credentials.email} LIMIT 1
         `;
         const existingUser = rows[0];
 
-        // Registration flow
+        // Registration
         if (credentials.register && !existingUser) {
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(credentials.password, salt);
@@ -73,7 +71,7 @@ const handler = NextAuth({
           return newUserRows[0] || null;
         }
 
-        // Login flow
+        // Login
         if (!existingUser) return null;
 
         const isValid = await bcrypt.compare(credentials.password, existingUser.password_hash);
@@ -83,22 +81,17 @@ const handler = NextAuth({
       },
     }),
   ],
-  session: { strategy: "jwt" as const }, // literal type to satisfy TS
+  session: { strategy: "jwt" as const },
   callbacks: {
-    // --- JWT callback ---
-    async jwt(params) {
-      const { token, user } = params; // NextAuth v5
+    async jwt({ token, user }) {
       if (user) {
-        const dbUser = user as DBUser; // cast safely
+        const dbUser = user as DBUser;
         token.id = dbUser.id;
         token.role = dbUser.role;
       }
       return token;
     },
-
-    // --- Session callback ---
     async session({ session, token }) {
-      // Assert session.user type to include id & role
       const user = session.user as Session["user"];
       user.id = token.id!;
       user.role = token.role!;
@@ -111,5 +104,4 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 });
 
-// --- App Router export ---
 export { handler as GET, handler as POST };

@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true, // important for next-auth types
     "types": [
       "node",
       "react",
