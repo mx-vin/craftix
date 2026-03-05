@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -6,7 +5,6 @@ import sql from "@/utilities/db";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 
-// DB User type
 type DBUser = {
   id: string;
   username: string;
@@ -17,7 +15,6 @@ type DBUser = {
   biography: string;
 };
 
-// Extend JWT type
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
@@ -25,7 +22,6 @@ declare module "next-auth/jwt" {
   }
 }
 
-// Extend Session type
 declare module "next-auth" {
   interface Session {
     user: {

@@ -1,51 +1,71 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { authConfig } from './auth.config';
-import { z } from 'zod';
-import type { User } from '@/app/lib/definitions';
-import bcrypt from 'bcrypt';
-import sql from '@/utilities/db';
+// app/lib/auth.ts
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import sql from "@/utilities/db";
+import { z } from "zod";
 
-async function getUser(email: string): Promise<User | undefined> {
+// --- DB User type ---
+export type DBUser = {
+  id: string;
+  username: string;
+  email: string;
+  password_hash: string;
+  role: string;
+  profileImage: string | null;
+  biography: string;
+};
+
+// --- Helper: fetch user by email ---
+export async function getUserByEmail(email: string): Promise<DBUser | null> {
   try {
-    const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`;
-    return user[0];
-  } catch (error) {
-    console.error('Failed to fetch user:', error);
-    throw new Error('Failed to fetch user.');
+    const rows = await sql<DBUser[]>`
+      SELECT * FROM ssu_users WHERE email = ${email} LIMIT 1
+    `;
+    return rows[0] || null;
+  } catch (err) {
+    console.error("Failed to fetch user:", err);
+    return null;
   }
 }
 
-export const { auth, signIn, signOut } = NextAuth({
-  ...authConfig,
-  providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password_hash: { label: 'Password', type: 'password_hash' },
-      },
-      async authorize(
-        credentials: Record<string, string> | undefined
-      ): Promise<User | null> {
-        if (!credentials) return null;
+// --- Credentials provider ---
+export const credentialsProvider = CredentialsProvider({
+  name: "Credentials",
+  credentials: {
+    email: { label: "Email", type: "text" },
+    password: { label: "Password", type: "password" },
+  },
+  async authorize(credentials) {
+    if (!credentials) return null;
 
-        const parsed = z
-          .object({ email: z.string().email(), password_hash: z.string().min(6) })
-          .safeParse(credentials);
+    // Validate input using Zod
+    const parsed = z
+      .object({
+        email: z.string().email(),
+        password: z.string().min(6),
+      })
+      .safeParse(credentials);
 
-        if (!parsed.success) return null;
+    if (!parsed.success) return null;
 
-        const { email, password_hash } = parsed.data;
-        const user = await getUser(email);
-        if (!user) return null;
+    const { email, password } = parsed.data;
 
-        const passwordsMatch = await bcrypt.compare(password_hash, user.password_hash);
-        if (passwordsMatch) return user;
+    // Fetch user
+    const user = await getUserByEmail(email);
+    if (!user) return null;
 
-        console.log('Invalid credentials');
-        return null;
-      },
-    }),
-  ],
+    // Check password
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    if (!isValid) return null;
+
+    // Return user with required fields
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage,
+      biography: user.biography,
+    };
+  },
 });
