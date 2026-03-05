@@ -1,25 +1,30 @@
 'use server';
- 
+
 import { signIn } from './auth';
-import { AuthError } from 'next-auth';
- 
-// ...
- 
+
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   try {
-    await signIn('credentials', formData);
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials.';
-        default:
-          return 'Something went wrong.';
+    // v5 signIn returns a Promise with the result
+    const result = await signIn('credentials', { 
+      redirect: false, 
+      ...Object.fromEntries(formData),
+    });
+
+    if (!result?.ok) {
+      // result.error contains the error message from NextAuth
+      if (result?.error === 'CredentialsSignin') {
+        return 'Invalid credentials.';
+      } else {
+        return 'Something went wrong.';
       }
     }
-    throw error;
+
+    return null; // no error
+  } catch (error: any) {
+    console.error('Authentication error:', error);
+    return 'Something went wrong.';
   }
 }
