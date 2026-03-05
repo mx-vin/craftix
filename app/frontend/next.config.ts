@@ -1,24 +1,22 @@
-import path from 'path';
+// frontend/next.config.ts
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Webpack customizations
+  // Webpack customization
   webpack(config) {
-    if (config.resolve) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        'webworker-threads': false,
-        'aws4': false,
-      };
-    }
+    config.resolve = config.resolve ?? {};
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      'webworker-threads': false,
+      aws4: false,
+    };
     return config;
   },
 
-  turbopack: {},
-
-  // CORS headers
+  // CORS headers (if frontend will hit APIs directly)
   async headers() {
     return [
       {
@@ -32,7 +30,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // Ensure frontend uses ESNext modules, not Node16
+  experimental: {
+    esmExternals: true,
+  },
 };
 
-// Use a type assertion to avoid TypeScript errors for deprecated/extra props
-export default nextConfig as NextConfig;
+export default nextConfig;
