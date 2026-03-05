@@ -1,5 +1,5 @@
 // app/api/auth/[...nextauth]/route.ts
-import NextAuth from "next-auth";
+import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import sql from "@/utilities/db";
@@ -14,32 +14,31 @@ type User = {
   biography: string;
 };
 
-export default NextAuth({
+// --- NextAuth configuration ---
+const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
-        username: { label: "Username", type: "text" }, // optional for registration
-        register: { label: "Register?", type: "boolean" }, // optional flag
+        username: { label: "Username", type: "text" },
+        register: { label: "Register?", type: "boolean" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Step 1: Check if user exists
+        // Check if user exists
         const rows = await sql<User[]>`
           SELECT * FROM ssu_users WHERE email = ${credentials.email} LIMIT 1
         `;
         const existingUser = rows[0];
 
-        // Step 2: Handle registration
+        // Registration flow
         if (credentials.register && !existingUser) {
-          // Hash password
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(credentials.password, salt);
 
-          // Insert new user
           const newUserRows = await sql<User[]>`
             INSERT INTO ssu_users (email, username, password_hash, role)
             VALUES (${credentials.email}, ${credentials.username || credentials.email}, ${hashedPassword}, 'user')
@@ -58,7 +57,7 @@ export default NextAuth({
           };
         }
 
-        // Step 3: Login flow
+        // Login flow
         if (!existingUser) return null;
 
         const isValid = await bcrypt.compare(credentials.password, existingUser.password_hash);
@@ -75,27 +74,29 @@ export default NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" as const }, // literal type fixes TS error
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
       }
       return session;
     },
   },
   pages: {
-    signIn: "/auth/login", // optional custom login page
+    signIn: "/auth/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+// --- App Router export ---
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
