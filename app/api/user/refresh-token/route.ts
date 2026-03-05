@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import { generateAccessToken, generateRefreshToken } from "@/utilities/generateToken";
 import { corsHeaders } from "@/utilities/cors";
 
-//this method checks if you have a refresh token and then gives you a new acces and refresh token
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
 interface DecodedUser {
@@ -14,7 +13,6 @@ interface DecodedUser {
   role?: string;
 }
 
-// Helper to verify the refresh token
 const verifyRefreshToken = (token: string): DecodedUser => {
   try {
     return jwt.verify(token, REFRESH_TOKEN_SECRET) as DecodedUser;
@@ -23,12 +21,8 @@ const verifyRefreshToken = (token: string): DecodedUser => {
   }
 };
 
-// Handle preflight requests (CORS)
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 export async function POST(req: NextRequest) {
@@ -46,9 +40,22 @@ export async function POST(req: NextRequest) {
     const decoded = verifyRefreshToken(refreshToken);
     const { id, email, username, role } = decoded;
 
-    // Generate new tokens
-    const newAccessToken = generateAccessToken(id, email!, username!, role);
-    const newRefreshToken = generateRefreshToken(id, email!, username!, role);
+    const isAdmin = role === "admin";
+
+    // ✅ Correct token generation
+    const newAccessToken = generateAccessToken({
+      id,
+      email: email!,
+      username: username!,
+      isAdmin,
+    });
+
+    const newRefreshToken = generateRefreshToken({
+      id,
+      email: email!,
+      username: username!,
+      isAdmin,
+    });
 
     return NextResponse.json(
       { accessToken: newAccessToken, refreshToken: newRefreshToken },
