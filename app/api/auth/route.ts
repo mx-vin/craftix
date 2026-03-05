@@ -3,8 +3,11 @@ import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import sql from "@/utilities/db";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 
-type User = {
+// --- DB user type ---
+type DBUser = {
   id: string;
   username: string;
   email: string;
@@ -14,8 +17,31 @@ type User = {
   biography: string;
 };
 
+// --- Extend JWT for custom fields ---
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: string;
+  }
+}
+
+// --- Extend Session user to include DB fields ---
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+      username?: string;
+      email?: string;
+      profileImage?: string | null;
+      biography?: string;
+      image?: string | null;
+    };
+  }
+}
+
 // --- NextAuth configuration ---
-const authOptions = {
+const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -28,8 +54,8 @@ const authOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Check if user exists
-        const rows = await sql<User[]>`
+        // Fetch user from DB
+        const rows = await sql<DBUser[]>`
           SELECT * FROM ssu_users WHERE email = ${credentials.email} LIMIT 1
         `;
         const existingUser = rows[0];
@@ -39,22 +65,12 @@ const authOptions = {
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(credentials.password, salt);
 
-          const newUserRows = await sql<User[]>`
+          const newUserRows = await sql<DBUser[]>`
             INSERT INTO ssu_users (email, username, password_hash, role)
             VALUES (${credentials.email}, ${credentials.username || credentials.email}, ${hashedPassword}, 'user')
             RETURNING *
           `;
-          const newUser = newUserRows[0];
-          if (!newUser) return null;
-
-          return {
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            role: newUser.role,
-            profileImage: newUser.profileImage,
-            biography: newUser.biography,
-          };
+          return newUserRows[0] || null;
         }
 
         // Login flow
@@ -63,31 +79,29 @@ const authOptions = {
         const isValid = await bcrypt.compare(credentials.password, existingUser.password_hash);
         if (!isValid) return null;
 
-        return {
-          id: existingUser.id,
-          username: existingUser.username,
-          email: existingUser.email,
-          role: existingUser.role,
-          profileImage: existingUser.profileImage,
-          biography: existingUser.biography,
-        };
+        return existingUser;
       },
     }),
   ],
-  session: { strategy: "jwt" as const }, // literal type fixes TS error
+  session: { strategy: "jwt" as const }, // literal type to satisfy TS
   callbacks: {
-    async jwt({ token, user }: { token: any; user?: any }) {
+    // --- JWT callback ---
+    async jwt(params) {
+      const { token, user } = params; // NextAuth v5
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
+        const dbUser = user as DBUser; // cast safely
+        token.id = dbUser.id;
+        token.role = dbUser.role;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
-      if (token) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-      }
+
+    // --- Session callback ---
+    async session({ session, token }) {
+      // Assert session.user type to include id & role
+      const user = session.user as Session["user"];
+      user.id = token.id!;
+      user.role = token.role!;
       return session;
     },
   },
@@ -95,8 +109,7 @@ const authOptions = {
     signIn: "/auth/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
-};
+});
 
 // --- App Router export ---
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
