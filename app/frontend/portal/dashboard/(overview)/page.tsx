@@ -3,7 +3,7 @@ import { Card } from '@/app/ui/dashboard/cards';
 import RevenueChart from '@/app/ui/dashboard/revenue-chart';
 import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
 import { montserrat } from '@/app/ui/fonts';
-import { fetchCardData } from '@/app/lib/data'; // Remove fetchLatestInvoices
+import { fetchCardData } from '@/app/backend/lib/data'; // Remove fetchLatestInvoices
 import { Suspense } from 'react';
 import {
   RevenueChartSkeleton,
