@@ -1,0 +1,29 @@
+# ------------------------------
+# Register a new user
+# ------------------------------
+POST http://localhost:3000/backend/api/auth/callback/credentials
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@example.com",
+  "username": "alice",
+  "password": "password123",
+  "register": true,
+"redirect": false
+}
+
+###
+
+# ------------------------------
+# Login existing user
+# ------------------------------
+POST http://localhost:3000/backend/api/auth/callback/credentials
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "password123",
+  "redirect": false
+}

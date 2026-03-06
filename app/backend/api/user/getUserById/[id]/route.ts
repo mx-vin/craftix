@@ -7,7 +7,7 @@ type ApiUser = {
   username: string;
   email: string;
   password_hash: string | null;
-  role: string;
+  role: boolean;           // is_admin
   profileImage: string | null;
   biography: string;
   created_at: string | Date;
@@ -15,7 +15,7 @@ type ApiUser = {
 
 // Handle preflight requests
 export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200, headers: corsHeaders });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 export async function GET(
@@ -39,7 +39,7 @@ export async function GET(
         username,
         email,
         password_hash,
-        role::text AS role,
+        is_admin AS role,
         profile_image AS "profileImage",
         COALESCE(biography, '') AS biography,
         created_at
@@ -55,7 +55,7 @@ export async function GET(
       );
     }
 
-    const user = { ...rows[0], password_hash: null }; // redact password hash
+    const user = { ...rows[0], password_hash: null }; // redact password
 
     return NextResponse.json(user, { status: 200, headers: corsHeaders });
   } catch (error: any) {

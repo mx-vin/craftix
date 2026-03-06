@@ -13,24 +13,19 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Use the followers_with_usernames view
     const rows = await sql`
-      SELECT
-        u.id,
-        u.username
-      FROM followers f
-      JOIN users me
-        ON me.id = f.follower_id
-      JOIN users u
-        ON u.id = f.following_id
-      WHERE me.username = ${username}
-      ORDER BY f.created_at DESC
+      SELECT following_username AS username
+      FROM followers_with_usernames
+      WHERE follower_username = ${username}
+      ORDER BY created_at DESC
     `;
 
-    return NextResponse.json(rows);
+    return NextResponse.json(rows.map(r => r.username));
   } catch (err) {
-    console.error(err);
+    console.error("GET FOLLOWING ERROR:", err);
     return NextResponse.json(
-      { error: "Failed to fetch following list" },
+      { error: "Failed to fetch following list", details: String(err) },
       { status: 500 }
     );
   }

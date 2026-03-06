@@ -1,7 +1,9 @@
+'use server';
+
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import sql from "../../utilities/db";
+import sql from "../../../utilities/db";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 
@@ -98,6 +100,25 @@ const handler = NextAuth({
     signIn: "/auth/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // <--- Force JSON responses for credentials provider
+  events: {},
+  debug: false,
 });
 
-export { handler as GET, handler as POST };
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  // Force redirect:false for REST/POST requests
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/callback/credentials`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, redirect: false }),
+  });
+
+  return new Response(await res.text(), {
+    status: res.status,
+    headers: res.headers,
+  });
+}
+
+export { handler as GET };
