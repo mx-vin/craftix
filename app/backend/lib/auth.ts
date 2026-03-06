@@ -1,7 +1,8 @@
-// app/lib/auth.ts
+// app/backend/lib/auth.ts
+
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import sql from "@/utilities/db";
+import sql from "../utilities/db";
 import { z } from "zod";
 
 // --- DB User type ---
@@ -28,7 +29,7 @@ export async function getUserByEmail(email: string): Promise<DBUser | null> {
   }
 }
 
-// --- Credentials provider ---
+// --- Credentials provider (backend-safe) ---
 export const credentialsProvider = CredentialsProvider({
   name: "Credentials",
   credentials: {
@@ -38,7 +39,6 @@ export const credentialsProvider = CredentialsProvider({
   async authorize(credentials) {
     if (!credentials) return null;
 
-    // Validate input using Zod
     const parsed = z
       .object({
         email: z.string().email(),
@@ -49,16 +49,12 @@ export const credentialsProvider = CredentialsProvider({
     if (!parsed.success) return null;
 
     const { email, password } = parsed.data;
-
-    // Fetch user
     const user = await getUserByEmail(email);
     if (!user) return null;
 
-    // Check password
     const isValid = await bcrypt.compare(password, user.password_hash);
     if (!isValid) return null;
 
-    // Return user with required fields
     return {
       id: user.id,
       username: user.username,
@@ -69,3 +65,8 @@ export const credentialsProvider = CredentialsProvider({
     };
   },
 });
+
+// --- STUB EXPORTS for frontend-only functions ---
+// These exist so backend compiles cleanly without importing frontend code
+export const signIn = async () => null;
+export const signOut = async () => null;

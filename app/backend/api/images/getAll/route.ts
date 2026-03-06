@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import sql from "@/utilities/db";
-import { corsHeaders } from "@/utilities/cors";
+import sql from "../../../utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
 
 export async function OPTIONS() {
   return NextResponse.json(null, { status: 200, headers: corsHeaders });

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import sql from "@/utilities/db";
+import sql from "../../utilities/db";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 

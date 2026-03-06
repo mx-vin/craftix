@@ -1,8 +1,8 @@
-// ssu-app/app/api/user/refresh-token/route.ts
+// ssu-@/app/@/app/api/user/refresh-token/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { generateAccessToken, generateRefreshToken } from "@/utilities/generateToken";
-import { corsHeaders } from "@/utilities/cors";
+import { generateAccessToken, generateRefreshToken } from "../../../utilities/generateToken";
+import { corsHeaders } from "../../../utilities/cors";
 
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 

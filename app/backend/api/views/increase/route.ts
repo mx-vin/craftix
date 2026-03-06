@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import sql from "@/utilities/db";
-import { corsHeaders } from "@/utilities/cors";
+import sql from "../../../utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
 
 const isUuid = (val: string) => /^[0-9a-fA-F-]{36}$/.test(val);
 

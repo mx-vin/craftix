@@ -1,4 +1,4 @@
-// /utilities/db.ts
+// /@/utilities/db.ts
 import postgres, { Sql } from "postgres";
 
 // Extend globalThis to include our postgresClient

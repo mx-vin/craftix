@@ -1,5 +1,5 @@
 ### Upload image to a post
-POST https://ssu-social-newwave.vercel.app/api/images/create
+POST https://ssu-social-newwave.vercel.@/app/api/images/create
 Content-Type: multipart/form-data; boundary=FormBoundary
 
 --FormBoundary
@@ -15,4 +15,4 @@ Content-Type: image/jpeg
 
 
 ### Delete image by key
-DELETE https://ssu-social-newwave.vercel.app/api/images/33333333-3333-3333-3333-333333333333-1761751656384.jpg
+DELETE https://ssu-social-newwave.vercel.@/app/api/images/33333333-3333-3333-3333-333333333333-1761751656384.jpg

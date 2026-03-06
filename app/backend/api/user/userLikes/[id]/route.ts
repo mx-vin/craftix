@@ -1,23 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
- 
-import { corsHeaders } from "@/utilities/cors";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-import sql from "@/utilities/db";
+import { corsHeaders } from "../../../../utilities/cors";
+import sql from "../../../../utilities/db";
 
-// Handle preflight requests (CORS)
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders,
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// GET /api/user-likes/[userId]
 export async function GET(
   _req: NextRequest,
-  ctx: { params: Promise<{ id: string }>} 
-)
-  {
+  ctx: { params: Promise<{ id: string }> }
+) {
   const { id } = await ctx.params;
 
   if (!id) {
@@ -25,14 +19,12 @@ export async function GET(
   }
 
   try {
-    // Fetch all posts liked by this user
     const likedPosts = await sql<{ post_id: string }[]>`
       SELECT post_id
       FROM likes
       WHERE user_id = ${id}::uuid
     `;
 
-    // Format to match your frontend expectation
     const response = likedPosts.map((row) => ({ postId: row.post_id }));
 
     return NextResponse.json(response, { status: 200 });

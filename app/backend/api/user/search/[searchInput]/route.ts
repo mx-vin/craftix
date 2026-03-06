@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
  
-import { corsHeaders } from "@/utilities/cors";
+import { corsHeaders } from "../../../../utilities/cors";
 
 // This route mirrors the legacy backend: GET /user/search/:searchInput
 // It returns an array of user objects with the same field names/types
 // as the original API. Password is included as null to preserve shape
 // without exposing hashes.
 
-import sql from "@/utilities/db";
+import sql from "../../../../utilities/db";
 
 type ApiUser = {
   id: string;

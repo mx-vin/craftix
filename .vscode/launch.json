@@ -21,7 +21,7 @@
             "type": "node",
             "request": "launch",
             "name": "Next.js: debug",
-            "program": "${workspaceFolder}/ssu-app/node_modules/next/dist/bin/next",
+            "program": "${workspaceFolder}/ssu-@/app/node_modules/next/dist/bin/next",
             "args": ["dev"],
             "cwd": "${workspaceFolder}/ssu-app",
             "protocol": "inspector"

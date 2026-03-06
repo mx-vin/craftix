@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { corsHeaders } from "@/utilities/cors";
-import sql from "@/utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
+import sql from "../../../utilities/db";
 
 // GET /api/hashmaps/post/getTagsForPost/:post_id
 export async function GET(_req: Request, ctx: { params: Promise<{ post_id: string }> }) {

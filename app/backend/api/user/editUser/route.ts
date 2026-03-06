@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { corsHeaders } from "@/utilities/cors";
-import sql from "@/utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
+import sql from "../../../utilities/db";
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });

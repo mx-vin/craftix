@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
  
-import { corsHeaders } from "@/utilities/cors";
+import { corsHeaders } from "../../../../utilities/cors";
 
-import sql from "@/utilities/db";
+import sql from "../../../../utilities/db";
 
 export async function GET(
   _req: Request,

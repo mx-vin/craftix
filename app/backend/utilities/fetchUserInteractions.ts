@@ -1,6 +1,6 @@
  
 
-import sql from "@/utilities/db";
+import sql from "./db";
 
 export type UserInteractions = {
   likes: { post_id: string; created_at: string }[];

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import sql from "@/utilities/db";
-import { corsHeaders } from "@/utilities/cors";
+import sql from "../../../../utilities/db";
+import { corsHeaders } from "../../../../utilities/cors";
 
 type LikeRow = {
   id: string; // combined key: userId-postId

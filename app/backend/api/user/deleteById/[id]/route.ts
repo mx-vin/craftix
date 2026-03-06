@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { corsHeaders } from "@/utilities/cors";
-import sql from "@/utilities/db";
+import { corsHeaders } from "../../../../utilities/cors";
+import sql from "../../../../utilities/db";
 
 type ApiUser = {
   id: string;

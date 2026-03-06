@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
  
-import { corsHeaders } from "@/utilities/cors";
+import { corsHeaders } from "../../../../utilities/cors";
 
-import sql from "@/utilities/db";
+import sql from "../../../../utilities/db";
 
 const defaultProfileImageUrl =
   "https://ssusocial.s3.amazonaws.com/profilepictures/ProfileIcon.png";

@@ -1,4 +1,4 @@
-// ./utilities/generateTestToken.ts
+// ./@/utilities/generateTestToken.ts
 
 // Load .env
 require("dotenv").config();

@@ -1,4 +1,4 @@
-// utilities/reviveDates.ts
+// @/utilities/reviveDates.ts
 
 export function reviveDates(data: any): any {
   // Handle arrays

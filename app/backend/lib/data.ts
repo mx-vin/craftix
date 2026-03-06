@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import sql from '@/utilities/db';
+import sql from '../utilities/db';
 import {
   CustomerField,
   CustomersTableType,

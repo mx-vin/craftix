@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { corsHeaders } from "@/utilities/cors";
-import sql from "@/utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
+import sql from "../../../utilities/db";
 
 // Preflight for CORS
 export async function OPTIONS() {

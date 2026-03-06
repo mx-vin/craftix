@@ -1,8 +1,8 @@
-// app/api/user/refresh-token/route.ts
+// @/app/api/user/refresh-token/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import sql from "@/utilities/db";
-import { corsHeaders } from "@/utilities/cors";
-import { generateAccessToken, generateRefreshToken } from "@/utilities/generateToken";
+import sql from "../../utilities/db";
+import { corsHeaders } from "../../utilities/cors";
+import { generateAccessToken, generateRefreshToken } from "../../utilities/generateToken";
 
 type ApiUser = {
   id: string;

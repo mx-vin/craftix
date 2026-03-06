@@ -1,6 +1,6 @@
 # API Routes
 
-This directory contains all externally accessible **API endpoints** for the application. These are implemented using **Next.js route handlers** and follow the `/app/api/*` routing convention.
+This directory contains all externally accessible **API endpoints** for the application. These are implemented using **Next.js route handlers** and follow the `/@/app/api/*` routing convention.
 
 ## Purpose
 

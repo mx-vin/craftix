@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import sql from "@/utilities/db";
-import { corsHeaders } from "@/utilities/cors";
+import sql from "../../../../utilities/db";
+import { corsHeaders } from "../../../../utilities/cors";
 
 // GET /api/like/user-likes/[username]
 export async function GET(req: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import sql from "@/utilities/db";
+import sql from "../../utilities/db";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);

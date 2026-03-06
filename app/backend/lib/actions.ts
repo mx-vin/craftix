@@ -1,30 +1,36 @@
 'use server';
 
-import { signIn } from './auth';
+import { signIn as nextAuthSignIn } from 'next-auth/react'; // v5 recommended import
+import type { SignInResponse } from 'next-auth/react';
 
 export async function authenticate(
   prevState: string | undefined,
-  formData: FormData,
-) {
+  formData: FormData
+): Promise<string | null> {
   try {
-    // v5 signIn returns a Promise with the result
-    const result = await signIn('credentials', { 
-      redirect: false, 
-      ...Object.fromEntries(formData),
+    // Convert FormData to a plain object
+    const data: Record<string, string> = Object.fromEntries(formData.entries()) as Record<
+      string,
+      string
+    >;
+
+    // Call NextAuth signIn
+    const result: SignInResponse | undefined = await nextAuthSignIn('credentials', {
+      redirect: false,
+      ...data,
     });
 
-    if (!result?.ok) {
-      // result.error contains the error message from NextAuth
-      if (result?.error === 'CredentialsSignin') {
+    // Check for errors safely
+    if (result && !result.ok) {
+      if (result.error === 'CredentialsSignin') {
         return 'Invalid credentials.';
-      } else {
-        return 'Something went wrong.';
       }
+      return 'Something went wrong.';
     }
 
     return null; // no error
-  } catch (error: any) {
-    console.error('Authentication error:', error);
+  } catch (err: unknown) {
+    console.error('Authentication error:', err);
     return 'Something went wrong.';
   }
 }

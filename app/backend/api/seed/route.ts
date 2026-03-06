@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { invoices, customers, revenue, users } from "../../lib/placeholder-data";
-import sql from "@/utilities/db";
+import sql from "../../utilities/db";
 
 // USERS
 async function seedUsers(db: any) {
