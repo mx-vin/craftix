@@ -1,16 +1,15 @@
 # ------------------------------
 # Register a new user
 # ------------------------------
-POST http://localhost:3000/backend/api/auth/callback/credentials
+POST http://localhost:3000/backend/api/auth
 Content-Type: application/json
 Accept: application/json
 
 {
   "email": "alice@example.com",
   "username": "alice",
-  "password": "password123",
-  "register": true,
-"redirect": false
+  "password": "123",
+  "register": true
 }
 
 ###
@@ -18,12 +17,27 @@ Accept: application/json
 # ------------------------------
 # Login existing user
 # ------------------------------
-POST http://localhost:3000/backend/api/auth/callback/credentials
+POST http://localhost:3000/backend/api/auth
 Content-Type: application/json
 Accept: application/json
 
 {
   "email": "alice@example.com",
-  "password": "password123",
-  "redirect": false
+  "password": "123",
+  "register": false
+}
+
+###
+
+# ------------------------------
+# Example: failed login (wrong password)
+# ------------------------------
+POST http://localhost:3000/backend/api/auth
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "wrongpassword",
+  "register": false
 }

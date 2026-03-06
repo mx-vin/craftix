@@ -57,11 +57,11 @@ Content-Type: application/json
 DELETE http://localhost:3000/backend/api/user/deleteById/cb936ebf-d204-4d62-afa7-156dbcb3f4d6
 
 ### Get profile image
-GET http://localhost:3000/backend/api/user/getProfileImage/USER_ID
+GET http://localhost:3000/backend/api/user/getProfileImage/cb936ebf-d204-4d62-afa7-156dbcb3f4d6
 Accept: application/json
 
 ### Get profile image proxy
-GET http://localhost:3000/backend/api/user/getProfileImageProxy/USER_ID
+GET http://localhost:3000/backend/api/user/getProfileImageProxy/cb936ebf-d204-4d62-afa7-156dbcb3f4d6
 Accept: application/json
 
 ### Refresh token
