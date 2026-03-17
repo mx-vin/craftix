@@ -3,10 +3,10 @@
 import { NextResponse } from 'next/server';
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
-// Type for user row from DB
 type DBUser = {
   id: string;
   username: string;
@@ -22,13 +22,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, username, password, register } = body;
 
-    // Validate fields
     if (!email || !password || (register && !username)) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    // ======================
+    // REGISTER
+    // ======================
     if (register) {
-      // Check if email or username already exists
       const existing = await sql<DBUser[]>`
         SELECT * FROM users
         WHERE email = ${email} OR username = ${username}
@@ -39,10 +40,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'User already exists' }, { status: 409 });
       }
 
-      // Hash password
       const hash = await bcrypt.hash(password, 10);
 
-      // Insert new user
       const inserted = await sql<DBUser[]>`
         INSERT INTO users (username, email, password_hash)
         VALUES (${username}, ${email}, ${hash})
@@ -51,35 +50,52 @@ export async function POST(req: Request) {
 
       const user = inserted[0];
 
-      return NextResponse.json({ user }, { status: 201 });
-    } else {
-      // Login flow
-      const rows = await sql<DBUser[]>`
-        SELECT * FROM users
-        WHERE email = ${email}
-        LIMIT 1
-      `;
+      // 🔐 CREATE TOKEN
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.ACCESS_TOKEN_SECRET!,
+        { expiresIn: '1h' }
+      );
 
-      const user = rows[0];
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // Check password
-      const valid = await bcrypt.compare(password, user.password_hash);
-      if (!valid) {
-        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-      }
-
-      return NextResponse.json({
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          is_admin: user.is_admin,
-        },
-      });
+      return NextResponse.json({ user, token }, { status: 201 });
     }
+
+    // ======================
+    // LOGIN
+    // ======================
+    const rows = await sql<DBUser[]>`
+      SELECT * FROM users
+      WHERE email = ${email}
+      LIMIT 1
+    `;
+
+    const user = rows[0];
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+    }
+
+    // 🔐 CREATE TOKEN
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.ACCESS_TOKEN_SECRET!,
+      { expiresIn: '1h' }
+    );
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin,
+      },
+      token,
+    });
+
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

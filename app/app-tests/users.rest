@@ -34,16 +34,16 @@ Accept: application/json
 
 ### Get user by ID
 # Replace USER_ID with actual UUID
-GET http://localhost:3000/backend/api/user/getUserById/adc8a007-1551-48ac-9504-9cc0ae8ecd7d
+GET http://localhost:3000/backend/api/user/getUserById/efb54cab-52d4-4cc1-9a00-ed2ef8edeed2
 Accept: application/json
 
 ### Get user by username
-GET http://localhost:3000/backend/api/user/getUserByUsername/alice
+GET http://localhost:3000/backend/api/user/getUserByUsername/alice_updated
 Accept: application/json
 
-## Edit user
-PUT http://localhost:3000/backend/api/user/editUser/adc8a007-1551-48ac-9504-9cc0ae8ecd7d
-Authorization: Bearer FAKE_REFRESH_TOKEN
+### Edit user
+PUT http://localhost:3000/backend/api/user/editUser/efb54cab-52d4-4cc1-9a00-ed2ef8edeed2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImVmYjU0Y2FiLTUyZDQtNGNjMS05YTAwLWVkMmVmOGVkZWVkMiIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM3NjI3NDcsImV4cCI6MTc3Mzc2NjM0N30.mginZXKsUslKlSIluHwI63W6eofsFQaSKmJkxjwoUEg
 Content-Type: application/json
 
 {
@@ -54,7 +54,8 @@ Content-Type: application/json
 }
 
 ### Delete user
-DELETE http://localhost:3000/backend/api/user/deleteById/cb936ebf-d204-4d62-afa7-156dbcb3f4d6
+DELETE http://localhost:3000/backend/api/user/deleteById/048db04d-800b-4509-99d1-cb17529b5d4c
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA0OGRiMDRkLTgwMGItNDUwOS05OWQxLWNiMTc1MjliNWQ0YyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM3NjQzNzUsImV4cCI6MTc3Mzc2Nzk3NX0.szcn4xHydTNJW2YyFd6ptvtD5PKK_66kry5cO_x3TN0
 
 ### Get profile image
 GET http://localhost:3000/backend/api/user/getProfileImage/cb936ebf-d204-4d62-afa7-156dbcb3f4d6
