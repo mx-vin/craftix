@@ -6,9 +6,9 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "email": "alice@example.com",
-  "username": "alice",
-  "password": "123",
+  "email": "bob@example.com",
+  "username": "bob",
+  "password": "345",
   "register": true
 }
 
