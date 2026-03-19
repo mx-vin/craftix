@@ -1,0 +1,25 @@
+### Create a new formula
+POST http://localhost:3000/backend/api/formulas/createFormula
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM4ODI3OTUsImV4cCI6MTc3Mzg4NjM5NX0.aR9tRa6NfqJd9HpuJqNmadJ8pCt3eMJwa3qCiKJMpv8
+Content-Type: application/json
+
+{
+  "name": "Torch Formula",
+  "userId": "e396abfd-eaab-41ed-a139-2fdc20efdf67",
+  "data": {
+    "inputs": [
+      { "item": "coal", "quantity": 1 },
+      { "item": "stick", "quantity": 1 }
+    ],
+    "outputs": [
+      { "item": "torch", "quantity": 1 }
+    ]
+  },
+  "folderId": null,
+  "description": "Base crafting formula for torch"
+}
+
+### Get Formula
+GET http://localhost:3000/backend/api/formulas/getFormula/9b7da0dc-a127-4596-99ea-c94166e3be90
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM4ODI3OTUsImV4cCI6MTc3Mzg4NjM5NX0.aR9tRa6NfqJd9HpuJqNmadJ8pCt3eMJwa3qCiKJMpv8
+Content-Type: application/json

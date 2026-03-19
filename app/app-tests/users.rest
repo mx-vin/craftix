@@ -4,11 +4,11 @@ Accept: application/json
 
 ### Get user by ID
 # Replace USER_ID with actual UUID
-GET http://localhost:3000/backend/api/user/getUserById/efb54cab-52d4-4cc1-9a00-ed2ef8edeed2
+GET http://localhost:3000/backend/api/user/getUserById/e396abfd-eaab-41ed-a139-2fdc20efdf67
 Accept: application/json
 
 ### Get user by username
-GET http://localhost:3000/backend/api/user/getUserByUsername/bob
+GET http://localhost:3000/backend/api/user/getUserByUsername/alice
 Accept: application/json
 
 ### Edit user
@@ -49,13 +49,13 @@ GET http://localhost:3000/backend/api/user/search?query=ali
 Accept: application/json
 
 ### User likes
-GET http://localhost:3000/backend/api/user/userLikes/adc8a007-1551-48ac-9504-9cc0ae8ecd7d
+GET http://localhost:3000/backend/api/user/userLikes/e396abfd-eaab-41ed-a139-2fdc20efdf67
 Accept: application/json
 
 ### User number of likes
-GET http://localhost:3000/backend/api/user/userNumberLikes/adc8a007-1551-48ac-9504-9cc0ae8ecd7d
+GET http://localhost:3000/backend/api/user/userNumberLikes/e396abfd-eaab-41ed-a139-2fdc20efdf67
 Accept: application/json
 
 ### User total likes
-GET http://localhost:3000/backend/api/user/userTotalLikes/adc8a007-1551-48ac-9504-9cc0ae8ecd7d
+GET http://localhost:3000/backend/api/user/userTotalLikes/e396abfd-eaab-41ed-a139-2fdc20efdf67
 Accept: application/json
