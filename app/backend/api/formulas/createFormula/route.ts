@@ -1,4 +1,3 @@
-// app/backend/api/formulas/createFormula/route.ts
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { corsHeaders } from "../../../utilities/cors";
@@ -7,18 +6,18 @@ import sql from "../../../utilities/db";
 type FormulaCreateBody = {
   name: string;
   description?: string;
-  data: Record<string, any>;
+  data: {
+    inputs?: { item: string; quantity?: number }[];
+    outputs?: { item: string; quantity?: number }[];
+    [key: string]: any;
+  };
   folderId?: string | null;
 };
 
-// Verify JWT using your custom secret
+// Verify JWT
 function verifyToken(req: Request) {
   const authHeader = req.headers.get("authorization");
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null;
-  }
-
+  if (!authHeader?.startsWith("Bearer ")) return null;
   const token = authHeader.split(" ")[1];
 
   try {
@@ -36,11 +35,7 @@ export async function OPTIONS() {
 
 export async function POST(req: Request) {
   try {
-    // ----------------------
-    // AUTH CHECK
-    // ----------------------
     const userFromToken = verifyToken(req);
-
     if (!userFromToken) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -48,40 +43,49 @@ export async function POST(req: Request) {
       );
     }
 
-    // ----------------------
-    // INPUT
-    // ----------------------
     const body: FormulaCreateBody = await req.json();
     const { name, description, data, folderId } = body;
 
-    if (!name || !data) {
+    if (!name || !data || !data.inputs?.length || !data.outputs?.length) {
       return NextResponse.json(
-        { success: false, error: "Missing fields" },
+        { success: false, error: "Formula must have at least one input and one output" },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // ----------------------
-    // INSERT FORMULA
-    // ----------------------
-    const rows = await sql`
+    // 1️⃣ Insert formula
+    const [formula] = await sql`
       INSERT INTO formulas (user_id, folder_id, name, description, data)
       VALUES (${userFromToken.id}::uuid, ${folderId ?? null}::uuid, ${name}, ${description ?? null}, ${data})
       RETURNING
-        id,
-        user_id AS "userId",
-        folder_id AS "folderId",
-        name,
-        description,
-        data,
-        version,
-        is_latest AS "isLatest",
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
+        id, user_id AS "userId", folder_id AS "folderId", name, description, data,
+        version, is_latest AS "isLatest", created_at AS "createdAt", updated_at AS "updatedAt"
     `;
 
+    const formulaId = formula.id;
+
+    // 2️⃣ Insert input variables
+    for (const input of data.inputs ?? []) {
+      if (!input.item) continue;
+      const quantity = input.quantity ?? 1;
+      await sql`
+        INSERT INTO formula_variables (formula_id, name, type, base_value)
+        VALUES (${formulaId}::uuid, ${input.item}, 'input', ${quantity})
+      `;
+    }
+
+    // 3️⃣ Insert output variables
+    for (const output of data.outputs ?? []) {
+      if (!output.item) continue;
+      const quantity = output.quantity ?? 1;
+      await sql`
+        INSERT INTO formula_variables (formula_id, name, type, base_value)
+        VALUES (${formulaId}::uuid, ${output.item}, 'output', ${quantity})
+      `;
+    }
+
     return NextResponse.json(
-      { success: true, formula: rows[0] },
+      { success: true, formula },
       { status: 201, headers: corsHeaders }
     );
   } catch (err) {

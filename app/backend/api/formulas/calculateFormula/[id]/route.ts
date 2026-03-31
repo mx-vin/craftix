@@ -1,90 +1,86 @@
+// app/backend/api/formulas/calculateFormula/[id]/route.ts
 import { NextResponse } from "next/server";
 import sql from "../../../../utilities/db";
 import { corsHeaders } from "../../../../utilities/cors";
 
-// Recursive formula calculator
-async function calculateFormula(
-  formulaId: string,
-  inputOverrides: Record<string, number> = {},
-  visited: Set<string> = new Set()
-): Promise<Record<string, number>> {
-  if (visited.has(formulaId)) {
-    throw new Error(`Circular formula reference detected at formula ${formulaId}`);
-  }
-  visited.add(formulaId);
+// ----------------------
+// Core calculation
+// ----------------------
+function calculateBalancedValues(
+  variables: { name: string; type: string; base_value: number }[],
+  overrides: Record<string, number>
+) {
+  const used: Record<string, number> = {};
+  const results: Record<string, number> = {};
 
-  // Fetch variables and their base values
-  const variables = await sql`
-    SELECT id, name, type, base_value::float
-    FROM formula_variables
-    WHERE formula_id = ${formulaId}::uuid
-  `;
+  // Determine maximum full batches allowed by all overrides
+  let scale = Infinity;
 
-  const inputVars = variables.filter(v => v.type === "input");
-  const outputVars = variables.filter(v => v.type === "output");
-
-  // Determine effective input values
-  const inputValues: Record<string, number> = {};
-  inputVars.forEach(v => {
-    inputValues[v.name] = inputOverrides[v.name] ?? v.base_value ?? 1;
-  });
-
-  // Fetch linked subformulas
-  const links = await sql`
-    SELECT * FROM formula_links WHERE from_formula_id = ${formulaId}::uuid
-  `;
-
-  // Recursively calculate subformulas
-  for (const link of links) {
-    const subFormulaId = link.to_formula_id;
-    const targetVarId = link.to_variable_id;
-
-    const subResult = await calculateFormula(subFormulaId, inputOverrides, visited);
-
-    // Assign subformula result to parent input variable
-    const targetVar = await sql`
-      SELECT name FROM formula_variables WHERE id = ${targetVarId}::uuid
-    `;
-    if (targetVar[0]?.name && subResult[targetVar[0].name] !== undefined) {
-      inputValues[targetVar[0].name] = subResult[targetVar[0].name];
+  for (const [name, value] of Object.entries(overrides)) {
+    const v = variables.find(v => v.name === name);
+    if (v) {
+      const factor = Math.floor(value / v.base_value);
+      if (factor < scale) scale = factor;
     }
   }
 
-  // Compute outputs proportionally based on all input ratios
-  const calculatedOutputs: Record<string, number> = {};
-  outputVars.forEach(o => {
-    let scale = 1;
+  if (!isFinite(scale) || scale < 0) scale = 0;
 
-    if (inputVars.length) {
-      const ratios = inputVars.map(i => inputValues[i.name] / (i.base_value ?? 1));
-      scale = Math.min(...ratios); // use min ratio for scaling
+  // Compute used amounts for all variables
+  for (const v of variables) {
+    used[v.name] = v.base_value * scale;
+    if (v.type.toLowerCase() === "output") {
+      results[v.name] = used[v.name];
     }
+  }
 
-    calculatedOutputs[o.name] = Math.round(scale * (o.base_value ?? 1));
-  });
-
-  visited.delete(formulaId);
-  return calculatedOutputs;
+  return { used, results };
 }
 
-export async function POST(req: Request, ctx: { params: { id: string } }) {
+// ----------------------
+// POST /calculateFormula/:id
+// ----------------------
+export async function POST(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = ctx.params;
+    const { id } = await ctx.params;
+    if (!id) {
+      return NextResponse.json(
+        { error: "Formula ID is required" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const body = await req.json();
-    const inputOverrides: Record<string, number> = body.inputs || {};
+    const overrides: Record<string, number> = body.inputs || {};
 
-    console.log("Calculating formula:", id);
-    console.log("Input overrides:", inputOverrides);
+    // Fetch all variables for this formula
+    const variables = await sql<{ name: string; type: string; base_value: number }[]>`
+      SELECT name, type, COALESCE(base_value,1)::int AS base_value
+      FROM formula_variables
+      WHERE formula_id = ${id}::uuid
+    `;
 
-    const results = await calculateFormula(id, inputOverrides);
+    if (!variables.length) {
+      return NextResponse.json(
+        { error: "Formula has no variables" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
 
-    console.log("Calculation results:", results);
+    // Compute used and results
+    const { used, results } = calculateBalancedValues(variables, overrides);
 
-    return NextResponse.json({ results }, { status: 200, headers: corsHeaders });
-  } catch (error) {
-    console.error("Enhanced nested calculate formula error:", error);
     return NextResponse.json(
-      { error: "Server error", message: String(error) },
+      { success: true, used, results },
+      { status: 200, headers: corsHeaders }
+    );
+  } catch (err) {
+    console.error("Calculate formula error:", err);
+    return NextResponse.json(
+      { error: "Server error", message: String(err) },
       { status: 500, headers: corsHeaders }
     );
   }

@@ -1,6 +1,6 @@
 ### Create a new formula
 POST http://localhost:3000/backend/api/formulas/createFormula
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM4ODI3OTUsImV4cCI6MTc3Mzg4NjM5NX0.aR9tRa6NfqJd9HpuJqNmadJ8pCt3eMJwa3qCiKJMpv8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NjM2NDYsImV4cCI6MTc3Mzk2NzI0Nn0.JDAoZ0Z0FHbCfZIjAPL2doy13xFgJqeXRKGGhO43RsU
 Content-Type: application/json
 
 {
@@ -20,23 +20,23 @@ Content-Type: application/json
 }
 
 ### Get Formula
-GET http://localhost:3000/backend/api/formulas/getFormula/da8b48fc-9765-4dbc-8bd3-c71784653a8a
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NTc5MjYsImV4cCI6MTc3Mzk2MTUyNn0.3BLTPCKpcICq-gHp2XjgfrMEU2SUfZ8WwAJxYn872q8
+GET http://localhost:3000/backend/api/formulas/getFormula/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NjM2NDYsImV4cCI6MTc3Mzk2NzI0Nn0.JDAoZ0Z0FHbCfZIjAPL2doy13xFgJqeXRKGGhO43RsU
 Content-Type: application/json
 
 ### Update formula variables
-PUT http://localhost:3000/backend/api/formulas/updateFormula/da8b48fc-9765-4dbc-8bd3-c71784653a8a
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NTc5MjYsImV4cCI6MTc3Mzk2MTUyNn0.3BLTPCKpcICq-gHp2XjgfrMEU2SUfZ8WwAJxYn872q8
+PUT http://localhost:3000/backend/api/formulas/updateFormula/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NjM2NDYsImV4cCI6MTc3Mzk2NzI0Nn0.JDAoZ0Z0FHbCfZIjAPL2doy13xFgJqeXRKGGhO43RsU
 Content-Type: application/json
 
 {
   "name": "Torch Formula Updated",
-  "description": "Updated description for torch formula pt 3",
+  "description": "Updated description for torch formula pt 4",
   "folder_id": null,
   "data": {
     "inputs": [
       { "item": "coal", "quantity": 2 },
-      { "item": "stick", "quantity": 1 }
+      { "item": "stick", "quantity": 10 }
     ],
     "outputs": [
       { "item": "torch", "quantity": 1 }
@@ -44,12 +44,10 @@ Content-Type: application/json
   },
   "variables": [
     {
-      "id": "a1111111-1111-1111-1111-111111111111",
       "name": "Coal",
       "type": "input"
     },
     {
-      "id": "b2222222-2222-2222-2222-222222222222",
       "name": "Torch",
       "type": "output"
     },
@@ -58,4 +56,14 @@ Content-Type: application/json
       "type": "input"
     }
   ]
+}
+
+### calculate formula
+POST http://localhost:3000/backend/api/formulas/calculateFormula/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+Content-Type: application/json
+
+{
+  "inputs": {
+    "Coal": 5
+  }
 }
