@@ -1,20 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../utilities/db";
 import { corsHeaders } from "../../../utilities/cors";
 
-// UUID validation helper
 const isUuid = (val: string) => /^[0-9a-fA-F-]{36}$/.test(val);
 
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ postId: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ postId: string }> }
+) {
   try {
-    const { postId } = await ctx.params;
+    const { postId } = await params;
 
     if (!isUuid(postId)) {
-      return NextResponse.json({ error: "Invalid postId" }, { status: 400, headers: corsHeaders });
+      return NextResponse.json(
+        { error: "Invalid postId" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     const [row] = await sql<{ viewcount: number }[]>`

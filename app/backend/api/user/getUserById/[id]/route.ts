@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
@@ -7,25 +7,23 @@ type ApiUser = {
   username: string;
   email: string;
   password_hash: string | null;
-  role: boolean;           // is_admin
+  role: boolean;
   profileImage: string | null;
   biography: string;
   created_at: string | Date;
 };
 
-// Handle preflight requests
 export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 export async function GET(
-  _req: Request,
-  ctx: { params: Promise<{ id: string }> }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
 
-    // Validate UUID
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json(
         { error: "Invalid user id" },
@@ -55,7 +53,7 @@ export async function GET(
       );
     }
 
-    const user = { ...rows[0], password_hash: null }; // redact password
+    const user = { ...rows[0], password_hash: null };
 
     return NextResponse.json(user, { status: 200, headers: corsHeaders });
   } catch (error: any) {

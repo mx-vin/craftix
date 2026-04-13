@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../utilities/db";
 
 type FeedPost = {
@@ -12,7 +12,7 @@ type FeedPost = {
   createdAt: string;
 };
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const username = searchParams.get("username");
 
@@ -26,14 +26,14 @@ export async function GET(req: Request) {
   try {
     const rows = await sql<FeedPost[]>`
       SELECT
-        p.id::text              AS "_id",
-        p.user_id::text        AS "userId",
-        u.username             AS "username",
-        p.content              AS "content",
-        p.image_uri            AS "imageUri",
-        p.is_sensitive         AS "isSensitive",
-        p.has_offensive_text   AS "hasOffensiveText",
-        p.created_at           AS "createdAt"
+        p.id::text            AS "_id",
+        p.user_id::text       AS "userId",
+        u.username            AS "username",
+        p.content             AS "content",
+        p.image_uri           AS "imageUri",
+        p.is_sensitive        AS "isSensitive",
+        p.has_offensive_text  AS "hasOffensiveText",
+        p.created_at          AS "createdAt"
       FROM posts p
       JOIN users u
         ON u.id = p.user_id

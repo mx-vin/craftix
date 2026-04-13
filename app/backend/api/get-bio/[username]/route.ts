@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../utilities/db";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { username: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = params;
+  const { username } = await params;
 
   try {
-    // Fetch user info from Supabase schema
     const rows = await sql<{ id: string; username: string; email: string }[]>`
       SELECT 
         id,
@@ -32,9 +31,8 @@ export async function GET(
       id: user.id,
       username: user.username,
       email: user.email,
-      // Add profileImage/biography if you add columns later
       profileImage: null,
-      biography: null
+      biography: null,
     });
   } catch (err: any) {
     console.error("get-bio error:", err);

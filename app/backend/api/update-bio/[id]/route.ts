@@ -1,22 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../utilities/cors";
 import sql from "../../../utilities/db";
 
-// Preflight CORS
 export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-// PUT /api/update-bio/[id]
-// Expects JSON body: { biography: string }
 export async function PUT(
-  req: Request,
-  ctx: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
 
-    // Validate UUID
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json(
         { error: "Invalid user id" },
@@ -34,7 +30,6 @@ export async function PUT(
       );
     }
 
-    // Update user biography
     const rows = await sql<{ biography: string }[]>`
       UPDATE users
       SET biography = ${biography}

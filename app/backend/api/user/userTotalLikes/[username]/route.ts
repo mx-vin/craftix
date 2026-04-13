@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
@@ -6,9 +6,18 @@ export async function OPTIONS() {
   return NextResponse.json(null, { status: 200, headers: corsHeaders });
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ username: string }> }) {
-  const { username } = await ctx.params;
-  if (!username?.trim()) return NextResponse.json({ message: "username is required." }, { status: 400, headers: corsHeaders });
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params;
+
+  if (!username?.trim()) {
+    return NextResponse.json(
+      { message: "username is required." },
+      { status: 400, headers: corsHeaders }
+    );
+  }
 
   try {
     const ident = username.trim();
@@ -29,9 +38,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ username: stri
           WHERE u.username = ${ident}
         `;
 
-    return NextResponse.json(rows?.[0]?.count ?? 0, { status: 200, headers: corsHeaders });
+    return NextResponse.json(rows?.[0]?.count ?? 0, {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500, headers: corsHeaders });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }

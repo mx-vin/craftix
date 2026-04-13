@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../../utilities/db";
 import { corsHeaders } from "../../../../utilities/cors";
 import jwt from "jsonwebtoken";
 
-function verifyToken(req: Request) {
+function verifyToken(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
@@ -18,13 +18,10 @@ function verifyToken(req: Request) {
 }
 
 export async function GET(
-  req: Request,
-  ctx: { params: Promise<{ id: string }> } // NOTE: params is a Promise
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ----------------------
-    // AUTH
-    // ----------------------
     const user = verifyToken(req);
     if (!user) {
       return NextResponse.json(
@@ -33,11 +30,7 @@ export async function GET(
       );
     }
 
-    // ----------------------
-    // GET PARAMS
-    // ----------------------
-    const params = await ctx.params; // must await
-    const id = params.id;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -46,12 +39,10 @@ export async function GET(
       );
     }
 
-    // ----------------------
-    // FETCH DATA
-    // ----------------------
     const [formula] = await sql`
       SELECT * FROM formulas WHERE id = ${id}::uuid
     `;
+
     if (!formula) {
       return NextResponse.json(
         { error: "Formula not found" },

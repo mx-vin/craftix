@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
-const defaultProfileImageUrl = "https://ssusocial.s3.amazonaws.com/profilepictures/ProfileIcon.png";
+const defaultProfileImageUrl =
+  "https://ssusocial.s3.amazonaws.com/profilepictures/ProfileIcon.png";
 
 async function fetchImageArrayBuffer(url: string) {
   try {
@@ -20,9 +21,18 @@ export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ username: string }> }) {
-  const { username } = await ctx.params;
-  if (!username) return NextResponse.json({ message: "Username is required." }, { status: 400, headers: corsHeaders });
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params;
+
+  if (!username) {
+    return NextResponse.json(
+      { message: "Username is required." },
+      { status: 400, headers: corsHeaders }
+    );
+  }
 
   try {
     const [user] = await sql<{ profile_image: string | null }[]>`
@@ -34,16 +44,28 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ username: 
 
     const candidateUrl = user?.profile_image || defaultProfileImageUrl;
     const primary = await fetchImageArrayBuffer(candidateUrl);
-    const chosen = primary ?? await fetchImageArrayBuffer(defaultProfileImageUrl);
+    const chosen = primary ?? (await fetchImageArrayBuffer(defaultProfileImageUrl));
 
-    if (!chosen) return NextResponse.json({ message: "Image fetch failed." }, { status: 502, headers: corsHeaders });
+    if (!chosen) {
+      return NextResponse.json(
+        { message: "Image fetch failed." },
+        { status: 502, headers: corsHeaders }
+      );
+    }
 
     return new NextResponse(chosen.body, {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": chosen.contentType, "Cache-Control": "public, max-age=300" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": chosen.contentType,
+        "Cache-Control": "public, max-age=300",
+      },
     });
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ message: err.message || "Server error" }, { status: 500, headers: corsHeaders });
+    return NextResponse.json(
+      { message: err.message || "Server error" },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }

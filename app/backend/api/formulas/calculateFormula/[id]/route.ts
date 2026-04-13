@@ -1,11 +1,7 @@
-// app/backend/api/formulas/calculateFormula/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../../utilities/db";
 import { corsHeaders } from "../../../../utilities/cors";
 
-// ----------------------
-// Core calculation
-// ----------------------
 function calculateBalancedValues(
   variables: { name: string; type: string; base_value: number }[],
   overrides: Record<string, number>
@@ -13,11 +9,10 @@ function calculateBalancedValues(
   const used: Record<string, number> = {};
   const results: Record<string, number> = {};
 
-  // Determine maximum full batches allowed by all overrides
   let scale = Infinity;
 
   for (const [name, value] of Object.entries(overrides)) {
-    const v = variables.find(v => v.name === name);
+    const v = variables.find((v) => v.name === name);
     if (v) {
       const factor = Math.floor(value / v.base_value);
       if (factor < scale) scale = factor;
@@ -26,7 +21,6 @@ function calculateBalancedValues(
 
   if (!isFinite(scale) || scale < 0) scale = 0;
 
-  // Compute used amounts for all variables
   for (const v of variables) {
     used[v.name] = v.base_value * scale;
     if (v.type.toLowerCase() === "output") {
@@ -37,15 +31,13 @@ function calculateBalancedValues(
   return { used, results };
 }
 
-// ----------------------
-// POST /calculateFormula/:id
-// ----------------------
 export async function POST(
-  req: Request,
-  ctx: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
+
     if (!id) {
       return NextResponse.json(
         { error: "Formula ID is required" },
@@ -56,7 +48,6 @@ export async function POST(
     const body = await req.json();
     const overrides: Record<string, number> = body.inputs || {};
 
-    // Fetch all variables for this formula
     const variables = await sql<{ name: string; type: string; base_value: number }[]>`
       SELECT name, type, COALESCE(base_value,1)::int AS base_value
       FROM formula_variables
@@ -70,7 +61,6 @@ export async function POST(
       );
     }
 
-    // Compute used and results
     const { used, results } = calculateBalancedValues(variables, overrides);
 
     return NextResponse.json(

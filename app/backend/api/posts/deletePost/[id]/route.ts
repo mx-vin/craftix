@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
@@ -6,12 +6,18 @@ export async function OPTIONS() {
   return NextResponse.json(null, { status: 200, headers: corsHeaders });
 }
 
-export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
 
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
-      return NextResponse.json({ error: "Invalid post id" }, { status: 400, headers: corsHeaders });
+      return NextResponse.json(
+        { error: "Invalid post id" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     const result = await sql<{ deleted: boolean }[]>`
@@ -21,7 +27,10 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     `;
 
     if (result.length === 0) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404, headers: corsHeaders });
+      return NextResponse.json(
+        { error: "Post not found" },
+        { status: 404, headers: corsHeaders }
+      );
     }
 
     return NextResponse.json(

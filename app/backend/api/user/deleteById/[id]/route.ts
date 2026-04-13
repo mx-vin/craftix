@@ -1,9 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
-// Only include fields that exist in your schema
 type ApiUser = {
   id: string;
   username: string;
@@ -11,14 +10,13 @@ type ApiUser = {
   is_admin: boolean;
 };
 
-function verifyToken(req: Request) {
+function verifyToken(req: NextRequest) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.split(" ")[1];
   try {
     const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
-    console.log("Token verified, payload:", payload);
     return payload as { id: string; email: string; iat: number; exp: number };
   } catch (err) {
     console.error("Token verification failed:", err);
@@ -30,10 +28,14 @@ export async function OPTIONS() {
   return new NextResponse(null, { headers: corsHeaders });
 }
 
-export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await ctx.params;
-    const userFromToken = verifyToken(_req);
+    const { id } = await params;
+    const userFromToken = verifyToken(req);
+
     if (!userFromToken) {
       return NextResponse.json(
         { message: "Unauthorized" },
@@ -41,9 +43,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
       );
     }
 
-    console.log("User from token:", userFromToken, "UserId param:", id);
-
-    // Ensure user can only delete themselves
     if (userFromToken.id?.toString().trim() !== id?.toString().trim()) {
       return NextResponse.json(
         { message: "Not authorized to delete this user" },
@@ -51,15 +50,10 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
       );
     }
 
-    // Delete user
     const rows = await sql<ApiUser[]>`
       DELETE FROM users
       WHERE id = ${id}::uuid
-      RETURNING
-        id,
-        username,
-        email,
-        is_admin
+      RETURNING id, username, email, is_admin
     `;
 
     if (!rows.length) {
@@ -73,7 +67,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
       { message: "User deleted successfully", deletedUser: rows[0] },
       { status: 200, headers: corsHeaders }
     );
-
   } catch (error) {
     console.error("Delete user error:", error);
     return NextResponse.json(

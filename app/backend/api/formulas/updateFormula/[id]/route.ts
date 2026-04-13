@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../../utilities/db";
 import { corsHeaders } from "../../../../utilities/cors";
 
 export async function PUT(
-  req: Request,
-  ctx: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
+
     if (!id) {
       return NextResponse.json(
         { error: "Formula ID is required" },
@@ -48,8 +49,8 @@ export async function PUT(
       }
     }
 
-    const inputs = variables.filter(v => v.type === "input");
-    const outputs = variables.filter(v => v.type === "output");
+    const inputs = variables.filter((v: any) => v.type === "input");
+    const outputs = variables.filter((v: any) => v.type === "output");
 
     if (inputs.length === 0 || outputs.length === 0) {
       return NextResponse.json(
@@ -58,7 +59,6 @@ export async function PUT(
       );
     }
 
-    // Update main formula
     await sql`
       UPDATE formulas
       SET name = ${name}, description = ${description ?? null},
@@ -68,7 +68,6 @@ export async function PUT(
 
     const keepIds: string[] = [];
 
-    // Upsert variables
     for (const v of variables) {
       if (v.id) {
         keepIds.push(v.id);
@@ -87,12 +86,11 @@ export async function PUT(
       }
     }
 
-    // Delete removed variables (fixed array interpolation)
     if (keepIds.length > 0) {
       await sql`
         DELETE FROM formula_variables
         WHERE formula_id = ${id}::uuid
-          AND id != ALL(${keepIds.map(k => k)}::uuid[])
+          AND id != ALL(${keepIds.map((k) => k)}::uuid[])
       `;
     } else {
       await sql`
@@ -100,7 +98,6 @@ export async function PUT(
       `;
     }
 
-    // Fetch updated data
     const [formula] = await sql`SELECT * FROM formulas WHERE id = ${id}::uuid`;
     const updatedVariables = await sql`SELECT * FROM formula_variables WHERE formula_id = ${id}::uuid`;
     const links = await sql`SELECT * FROM formula_links WHERE from_formula_id = ${id}::uuid`;

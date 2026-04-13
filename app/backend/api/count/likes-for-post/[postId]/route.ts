@@ -1,15 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from "../../../../utilities/db";
 
-type Params = {
-  postId: string;
-};
-
 export async function GET(
-  _req: Request,
-  { params }: { params: Params }
+  _req: NextRequest,
+  { params }: { params: Promise<{ postId: string }> }
 ) {
-  const { postId } = params;
+  const { postId } = await params;
 
   try {
     const rows = await sql<{ count: number }[]>`

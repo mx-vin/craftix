@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
@@ -17,9 +17,12 @@ export async function OPTIONS() {
   return NextResponse.json(null, { status: 200, headers: corsHeaders });
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await ctx.params;
+    const { id } = await params;
 
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
       return NextResponse.json(
@@ -30,13 +33,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
     const rows = await sql<ApiPost[]>`
       SELECT
-        p.id::text             AS "id",
-        p.user_id::text        AS "userId",
-        u.username             AS "username",
-        p.content              AS "content",
-        p.image_uri            AS "imageUri",
-        p.is_sensitive         AS "isSensitive",
-        p.has_offensive_text   AS "hasOffensiveText",
+        p.id::text            AS "id",
+        p.user_id::text       AS "userId",
+        u.username            AS "username",
+        p.content             AS "content",
+        p.image_uri           AS "imageUri",
+        p.is_sensitive        AS "isSensitive",
+        p.has_offensive_text  AS "hasOffensiveText",
         p.created_at
       FROM posts p
       JOIN users u ON p.user_id = u.id
@@ -45,7 +48,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     `;
 
     if (!rows.length) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Post not found" },
+        { status: 404, headers: corsHeaders }
+      );
     }
 
     return NextResponse.json(rows[0], { status: 200, headers: corsHeaders });

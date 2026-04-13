@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
@@ -18,29 +18,33 @@ export async function OPTIONS() {
 }
 
 export async function GET(
-  req: Request,
-  ctx: { params: Promise<{ username: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const { username } = await ctx.params;
+    const { username } = await params;
+
     if (!username) {
-      return NextResponse.json({ success: false, message: "username required" }, { status: 400, headers: corsHeaders });
+      return NextResponse.json(
+        { success: false, message: "username required" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const postsPerPage = parseInt(searchParams.get("postsPerPage") || "10");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const postsPerPage = parseInt(searchParams.get("postsPerPage") || "10", 10);
     const offset = (page - 1) * postsPerPage;
 
     const rows = await sql<ApiPost[]>`
       SELECT
-        p.id::text          AS "id",
-        p.user_id::text     AS "userId",
-        u.username          AS "username",
-        p.content           AS "content",
-        p.image_uri         AS "imageUri",
-        p.is_sensitive      AS "isSensitive",
-        p.has_offensive_text AS "hasOffensiveText",
+        p.id::text             AS "id",
+        p.user_id::text        AS "userId",
+        u.username             AS "username",
+        p.content              AS "content",
+        p.image_uri            AS "imageUri",
+        p.is_sensitive         AS "isSensitive",
+        p.has_offensive_text   AS "hasOffensiveText",
         p.created_at
       FROM posts p
       JOIN users u ON p.user_id = u.id
