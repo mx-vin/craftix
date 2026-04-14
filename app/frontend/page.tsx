@@ -1,11 +1,21 @@
 import Link from "next/link";
+import styles from "./frontend.module.css";
 
 export default function FrontendHome() {
   return (
-    <main>
-      <h1>Craftix</h1>
-      <p>Create an account to start building your formula collection.</p>
-      <Link href="/frontend/portal/login">Sign In</Link>
+    <main className={styles.page}>
+      <section className={styles.heroWrap}>
+        <div className={styles.heroCard}>
+          <h1 className={styles.title}>Sign in to get started</h1>
+          <p className={styles.subtitle}>
+            Create an account to start building your formula collection
+          </p>
+
+          <Link href="/frontend/portal/login" className={styles.cta}>
+            Sign In
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
