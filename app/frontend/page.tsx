@@ -1,9 +1,12 @@
 import Link from "next/link";
+import TopNav from "./ui/TopNav";
 import styles from "./frontend.module.css";
 
 export default function FrontendHome() {
   return (
     <main className={styles.page}>
+      <TopNav />
+
       <section className={styles.heroWrap}>
         <div className={styles.heroCard}>
           <h1 className={styles.title}>Sign in to get started</h1>
@@ -11,9 +14,23 @@ export default function FrontendHome() {
             Create an account to start building your formula collection
           </p>
 
-          <Link href="/frontend/portal/login" className={styles.cta}>
-            Sign In
-          </Link>
+          <div className={styles.actions}>
+            <Link href="/frontend/portal/login" className={styles.cta}>
+              Sign In
+            </Link>
+
+            <Link
+              href="/frontend/portal/register"
+              className={styles.ctaSecondary}
+            >
+              Register
+            </Link>
+          </div>
+
+          <div className={styles.routeLinks}>
+            <Link href="/frontend/portal/formulas">Formulas</Link>
+            <Link href="/frontend/portal/builder">Builder</Link>
+          </div>
         </div>
       </section>
     </main>

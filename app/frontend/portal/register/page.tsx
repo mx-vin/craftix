@@ -1,38 +1,33 @@
-'use client';
+"use client";
 
-import { FormEvent, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-  });
-
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setError('');
-    setSuccess('');
 
     try {
-      const res = await fetch('/backend/api/auth', {
-        method: 'POST',
+      const res = await fetch("/backend/api/auth", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: form.username,
-          email: form.email,
-          password: form.password,
+          username,
+          email,
+          password,
           register: true,
         }),
       });
@@ -40,85 +35,71 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Registration failed');
+        setError(data.error || "Registration failed");
         return;
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      setSuccess('Registration successful');
-      router.push('/frontend');
+      router.push("/frontend/portal/formulas");
     } catch (err) {
-      setError('Server error');
+      setError("Server error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main style={{ padding: '2rem', maxWidth: '500px', margin: '0 auto' }}>
+    <main style={{ padding: "24px" }}>
       <h1>Register</h1>
 
       <form
-        onSubmit={handleSubmit}
-        style={{ display: 'grid', gap: '1rem', marginTop: '1.5rem' }}
+        onSubmit={handleRegister}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          maxWidth: "360px",
+        }}
       >
-        <div>
-          <label htmlFor="username">Username</label>
-          <br />
-          <input
-            id="username"
-            type="text"
-            value={form.username}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, username: e.target.value }))
-            }
-            required
-            style={{ width: '100%', padding: '0.5rem' }}
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
 
-        <div>
-          <label htmlFor="email">Email</label>
-          <br />
-          <input
-            id="email"
-            type="email"
-            value={form.email}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, email: e.target.value }))
-            }
-            required
-            style={{ width: '100%', padding: '0.5rem' }}
-          />
-        </div>
+        <input
+          type="email"
+          placeholder="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-        <div>
-          <label htmlFor="password">Password</label>
-          <br />
-          <input
-            id="password"
-            type="password"
-            value={form.password}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, password: e.target.value }))
-            }
-            required
-            style={{ width: '100%', padding: '0.5rem' }}
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-        <button type="submit" disabled={loading} style={{ padding: '0.75rem' }}>
-          {loading ? 'Registering...' : 'Register'}
+        <button type="submit" disabled={loading}>
+          {loading ? "Registering..." : "Create Account"}
         </button>
       </form>
 
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
-      {success && <p style={{ color: 'green', marginTop: '1rem' }}>{success}</p>}
+      {error ? <p style={{ color: "red" }}>{error}</p> : null}
 
-      <p style={{ marginTop: '1.5rem' }}>
+      <p>
         Already have an account? <Link href="/frontend/portal/login">Login</Link>
+      </p>
+
+      <p>
+        <Link href="/frontend">Back Home</Link>
       </p>
     </main>
   );

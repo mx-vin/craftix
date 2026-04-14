@@ -1,25 +1,21 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import styles from "./login.module.css";
+import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setLoading(true);
 
     try {
       const res = await fetch("/backend/api/auth", {
@@ -28,8 +24,8 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email,
-          password: form.password,
+          email,
+          password,
           register: false,
         }),
       });
@@ -41,10 +37,14 @@ export default function LoginPage() {
         return;
       }
 
+      // Store auth data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/frontend/portal/feed");
-    } catch {
+
+      // Redirect after login
+      router.push("/frontend/portal/formulas");
+    } catch (err) {
+      console.error(err);
       setError("Server error");
     } finally {
       setLoading(false);
@@ -52,46 +52,49 @@ export default function LoginPage() {
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card}>
-        <div className={styles.header}>
-          <p className={styles.brand}>Craftix</p>
-          <h1 className={styles.title}>Welcome back</h1>
-          <p className={styles.subtitle}>Log in to continue.</p>
-        </div>
+    <main style={{ padding: "24px" }}>
+      <h1>Login</h1>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <label className={styles.field}>
-            <span>Email</span>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-              required
-            />
-          </label>
+      <form
+        onSubmit={handleLogin}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          maxWidth: "360px",
+        }}
+      >
+        <input
+          type="email"
+          placeholder="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-          <label className={styles.field}>
-            <span>Password</span>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              required
-            />
-          </label>
+        <input
+          type="password"
+          placeholder="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-          {error ? <p className={styles.error}>{error}</p> : null}
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
 
-          <button type="submit" className={styles.submit} disabled={loading}>
-            {loading ? "Logging in..." : "Log In"}
-          </button>
-        </form>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <p className={styles.footer}>
-          Need an account? <Link href="/frontend/portal/register">Register</Link>
-        </p>
-      </section>
+      <p style={{ marginTop: "12px" }}>
+        Don't have an account?{" "}
+        <Link href="/frontend/portal/register">Register</Link>
+      </p>
+
+      <p>
+        <Link href="/frontend">Back Home</Link>
+      </p>
     </main>
   );
 }
