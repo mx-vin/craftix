@@ -1,0 +1,49 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(90deg, #4b352f 0%, #3f2c26 50%, #4b352f 100%);
+}
+
+.heroWrap {
+  padding: 40px 32px;
+}
+
+.heroCard {
+  max-width: 1450px;
+  min-height: 260px;
+  margin: 0 auto;
+  border-radius: 22px;
+  background: #927559;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  color: var(--text-light);
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f2dfd0;
+}
+
+.cta {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  padding: 14px 28px;
+  border-radius: 14px;
+  background: var(--accent-pink);
+  color: var(--text-dark);
+  font-weight: 700;
+}

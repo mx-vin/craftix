@@ -1,0 +1,47 @@
+.header {
+  background: var(--panel-light);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  height: 72px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 2rem;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link,
+.active {
+  padding: 14px 22px;
+  border-radius: 14px;
+  color: var(--text-dark);
+  font-size: 1.05rem;
+}
+
+.active {
+  background: var(--accent-pink);
+}
+
+.settings {
+  border: 0;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 1.75rem;
+  cursor: pointer;
+}

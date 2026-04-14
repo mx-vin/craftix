@@ -1,15 +1,24 @@
-import Link from 'next/link';
+import Link from "next/link";
+import TopNav from "./ui/TopNav";
+import styles from "./frontend.module.css";
 
 export default function FrontendHome() {
   return (
-    <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
-      <h1>Craftix</h1>
-      <p>This frontend is connected to the current auth backend.</p>
+    <main className={styles.page}>
+      <TopNav />
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-        <Link href="/frontend/portal/login">Login</Link>
-        <Link href="/frontend/portal/register">Register</Link>
-      </div>
+      <section className={styles.heroWrap}>
+        <div className={styles.heroCard}>
+          <h1 className={styles.title}>Sign in to get started</h1>
+          <p className={styles.subtitle}>
+            Create an account to start building your formula collection
+          </p>
+
+          <Link href="/frontend/portal/login" className={styles.cta}>
+            Sign In
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

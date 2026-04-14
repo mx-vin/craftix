@@ -1,0 +1,15 @@
+:root {
+  --bg-dark: #3b2823;
+  --bg-dark-2: #4a352d;
+  --panel-light: #eadfcb;
+  --panel-mid: #9a7c61;
+  --panel-soft: #f1ebdf;
+  --text-dark: #4f362c;
+  --text-light: #f7efe4;
+  --accent-pink: #eda8be;
+  --accent-pink-dark: #d98ea6;
+  --accent-brown: #7c5e4c;
+  --border-soft: #c9b59f;
+  --input-bg: #ece9e8;
+  --danger-soft: #d98e8e;
+}
