@@ -1,52 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { corsHeaders } from "../../../../utilities/cors";
 import sql from "../../../../utilities/db";
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { status: 200, headers: corsHeaders });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
-export async function GET(
+export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { username } = await params;
+    const { id: userId } = await params;
 
-    if (!username) {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
-        { success: false, message: "Username is required." },
-        { status: 400, headers: corsHeaders }
+        { success: false, message: "Missing token" },
+        { status: 401, headers: corsHeaders }
       );
     }
 
-    const [user] = await sql`
-      SELECT id, profile_image AS "profileImage"
-      FROM users
-      WHERE username = ${username}
-      LIMIT 1
+    const token = authHeader.split(" ")[1];
+    let decoded: any;
+
+    try {
+      decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
+    } catch (err: any) {
+      console.error("JWT verify error:", err);
+      return NextResponse.json(
+        { success: false, message: "Invalid or expired token", error: String(err) },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    if (decoded.id?.toString().trim() !== userId?.toString().trim()) {
+      return NextResponse.json(
+        { success: false, message: "Forbidden" },
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    const body = await req.json();
+    const username = body.username?.trim() || null;
+    const email = body.email?.trim() || null;
+    const password = body.password?.trim() || null;
+    const biography = body.biography?.trim() || null;
+    const profileImage = body.profileImage?.trim() || null;
+
+    const [existingUser] = await sql`
+      SELECT * FROM users WHERE id = ${userId}
     `;
 
-    if (!user) {
+    if (!existingUser) {
       return NextResponse.json(
-        { success: false, message: "User not found." },
+        { success: false, message: "User not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
-    const proxyUrl = new URL(
-      `/backend/api/user/profileImageProxy/${encodeURIComponent(username)}`,
-      req.nextUrl.origin
-    ).toString();
+    if (username) {
+      const [conflict] = await sql`
+        SELECT id FROM users
+        WHERE LOWER(username) = LOWER(${username})
+          AND id <> ${userId}
+      `;
+
+      if (conflict) {
+        return NextResponse.json(
+          { success: false, message: "Username already taken" },
+          { status: 409, headers: corsHeaders }
+        );
+      }
+    }
+
+    let hashedPassword = existingUser.password_hash;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    const [updatedUser] = await sql`
+      UPDATE users
+      SET
+        username = COALESCE(${username}, username),
+        email = COALESCE(${email}, email),
+        password_hash = ${hashedPassword},
+        biography = COALESCE(${biography}, biography),
+        profile_image = COALESCE(${profileImage}, profile_image),
+        updated_at = now()
+      WHERE id = ${userId}
+      RETURNING
+        id,
+        username,
+        email,
+        is_admin,
+        profile_image AS "profileImage",
+        COALESCE(biography, '') AS biography,
+        created_at
+    `;
 
     return NextResponse.json(
-      { success: true, imageUri: proxyUrl },
+      { success: true, user: updatedUser },
       { status: 200, headers: corsHeaders }
     );
-  } catch (error: any) {
-    console.error("Error fetching profile image:", error);
+  } catch (error) {
+    console.error("Edit user error:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Server error." },
+      { success: false, message: "Server error", error: String(error) },
       { status: 500, headers: corsHeaders }
     );
   }
