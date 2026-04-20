@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./builder.module.css";
 
@@ -73,7 +73,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
 }
 
-export default function BuilderPage() {
+function BuilderInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -533,15 +533,9 @@ export default function BuilderPage() {
 
           <div className={styles.metaPanel}>
             <h3>Formula Summary</h3>
-            <p>
-              Inputs: {nodes.filter((n) => n.type === "input").length}
-            </p>
-            <p>
-              Processes: {nodes.filter((n) => n.type === "process").length}
-            </p>
-            <p>
-              Outputs: {nodes.filter((n) => n.type === "output").length}
-            </p>
+            <p>Inputs: {nodes.filter((n) => n.type === "input").length}</p>
+            <p>Processes: {nodes.filter((n) => n.type === "process").length}</p>
+            <p>Outputs: {nodes.filter((n) => n.type === "output").length}</p>
           </div>
 
           <button type="submit" disabled={saving}>
@@ -587,5 +581,13 @@ export default function BuilderPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function BuilderPage() {
+  return (
+    <Suspense fallback={<main className={styles.page}>Loading builder...</main>}>
+      <BuilderInner />
+    </Suspense>
   );
 }
