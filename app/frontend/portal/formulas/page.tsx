@@ -22,6 +22,8 @@ type Formula = {
   data: {
     inputs?: { item: string; quantity?: number }[];
     outputs?: { item: string; quantity?: number }[];
+    nodes?: unknown[];
+    edges?: unknown[];
     [key: string]: any;
   };
   created_at?: string;
@@ -44,18 +46,8 @@ export default function FormulasPage() {
   const [token, setToken] = useState<string>("");
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
-  const [createError, setCreateError] = useState("");
   const [deleteError, setDeleteError] = useState("");
-
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  const [inputItem, setInputItem] = useState("");
-  const [inputQuantity, setInputQuantity] = useState("1");
-  const [outputItem, setOutputItem] = useState("");
-  const [outputQuantity, setOutputQuantity] = useState("1");
 
   useEffect(() => {
     const rawToken = localStorage.getItem("token");
@@ -111,87 +103,6 @@ export default function FormulasPage() {
       setFormulas([]);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleCreateFormula(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    if (!user || !token) {
-      setCreateError("You must be logged in");
-      return;
-    }
-
-    if (!name.trim()) {
-      setCreateError("Formula name is required");
-      return;
-    }
-
-    if (!inputItem.trim() || !outputItem.trim()) {
-      setCreateError("Formula must have at least one input and one output");
-      return;
-    }
-
-    const parsedInputQuantity = Number(inputQuantity) || 1;
-    const parsedOutputQuantity = Number(outputQuantity) || 1;
-
-    setCreating(true);
-    setCreateError("");
-
-    try {
-      const res = await fetch("/backend/api/formulas/createFormula", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim() || undefined,
-          folderId: null,
-          data: {
-            inputs: [
-              {
-                item: inputItem.trim(),
-                quantity: parsedInputQuantity,
-              },
-            ],
-            outputs: [
-              {
-                item: outputItem.trim(),
-                quantity: parsedOutputQuantity,
-              },
-            ],
-          },
-        }),
-      });
-
-      const text = await res.text();
-      let data: any = null;
-
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = { error: text || "Invalid server response" };
-      }
-
-      if (!res.ok || !data?.success) {
-        setCreateError(data?.error || data?.message || "Failed to create formula");
-        return;
-      }
-
-      setName("");
-      setDescription("");
-      setInputItem("");
-      setInputQuantity("1");
-      setOutputItem("");
-      setOutputQuantity("1");
-
-      await loadFormulas(user.id, token);
-    } catch (err: any) {
-      setCreateError(err?.message || "Failed to create formula");
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -269,111 +180,12 @@ export default function FormulasPage() {
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link href="/frontend">Home</Link>
-          <Link href="/frontend/portal/builder">Open Builder</Link>
+          <Link href="/frontend/portal/builder">New Formula</Link>
           <button type="button" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </header>
-
-      <section
-        style={{
-          border: "1px solid #ccc",
-          padding: "16px",
-          marginBottom: "24px",
-          maxWidth: "800px",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Create New Formula</h2>
-
-        <form
-          onSubmit={handleCreateFormula}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Formula name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-
-          <textarea
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-          />
-
-          <div style={{ borderTop: "1px solid #ddd", paddingTop: "12px" }}>
-            <h3 style={{ marginTop: 0 }}>Input</h3>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Input item"
-                value={inputItem}
-                onChange={(e) => setInputItem(e.target.value)}
-                required
-              />
-
-              <input
-                type="number"
-                min="1"
-                placeholder="Quantity"
-                value={inputQuantity}
-                onChange={(e) => setInputQuantity(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div style={{ borderTop: "1px solid #ddd", paddingTop: "12px" }}>
-            <h3 style={{ marginTop: 0 }}>Output</h3>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Output item"
-                value={outputItem}
-                onChange={(e) => setOutputItem(e.target.value)}
-                required
-              />
-
-              <input
-                type="number"
-                min="1"
-                placeholder="Quantity"
-                value={outputQuantity}
-                onChange={(e) => setOutputQuantity(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <button type="submit" disabled={creating}>
-            {creating ? "Creating..." : "Create Formula"}
-          </button>
-        </form>
-
-        {createError ? (
-          <p style={{ color: "red", marginBottom: 0 }}>{createError}</p>
-        ) : null}
-      </section>
 
       <section>
         <h2>Your Formulas</h2>
@@ -384,7 +196,10 @@ export default function FormulasPage() {
         {loading ? (
           <p>Loading formulas...</p>
         ) : formulas.length === 0 ? (
-          <p>No formulas found yet. Create one above.</p>
+          <div>
+            <p>No formulas found yet.</p>
+            <Link href="/frontend/portal/builder">Create your first formula</Link>
+          </div>
         ) : (
           <div
             style={{
@@ -421,7 +236,7 @@ export default function FormulasPage() {
                   </p>
 
                   <div style={{ margin: "12px 0" }}>
-                    <strong>Inputs:</strong>
+                    <strong>Derived Inputs:</strong>
                     {inputList.length > 0 ? (
                       <ul>
                         {inputList.map((input, index) => (
@@ -431,12 +246,12 @@ export default function FormulasPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p>No inputs</p>
+                      <p>No derived inputs</p>
                     )}
                   </div>
 
                   <div style={{ margin: "12px 0" }}>
-                    <strong>Outputs:</strong>
+                    <strong>Derived Outputs:</strong>
                     {outputList.length > 0 ? (
                       <ul>
                         {outputList.map((output, index) => (
@@ -446,7 +261,7 @@ export default function FormulasPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p>No outputs</p>
+                      <p>No derived outputs</p>
                     )}
                   </div>
 

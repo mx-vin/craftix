@@ -20,10 +20,25 @@ type FormulaVariable = {
   base_value: number;
 };
 
+type BuilderNode = {
+  id: string;
+  label: string;
+  quantity: number;
+  x: number;
+  y: number;
+};
+
+type BuilderEdge = {
+  id: string;
+  from: string;
+  to: string;
+};
+
 type FormulaData = {
   inputs?: { item: string; quantity?: number }[];
   outputs?: { item: string; quantity?: number }[];
   nodes?: BuilderNode[];
+  edges?: BuilderEdge[];
   [key: string]: any;
 };
 
@@ -47,18 +62,6 @@ type GetFormulaResponse = {
   success?: boolean;
 };
 
-type NodeType = "input" | "output" | "process";
-
-type BuilderNode = {
-  id: string;
-  variableId?: string;
-  type: NodeType;
-  label: string;
-  quantity: number;
-  x: number;
-  y: number;
-};
-
 type DragState = {
   nodeId: string;
   offsetX: number;
@@ -67,6 +70,10 @@ type DragState = {
 
 function makeNodeId() {
   return `node-${crypto.randomUUID()}`;
+}
+
+function makeEdgeId() {
+  return `edge-${crypto.randomUUID()}`;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -91,9 +98,16 @@ function BuilderInner() {
   const [saveSuccess, setSaveSuccess] = useState("");
 
   const [formula, setFormula] = useState<FormulaRecord | null>(null);
+
   const [nodes, setNodes] = useState<BuilderNode[]>([]);
+  const [edges, setEdges] = useState<BuilderEdge[]>([]);
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(null);
+
+  const [connectMode, setConnectMode] = useState(false);
+  const [pendingConnectionFrom, setPendingConnectionFrom] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -136,8 +150,8 @@ function BuilderInner() {
       if (!dragState || !canvasRef.current) return;
 
       const rect = canvasRef.current.getBoundingClientRect();
-      const nextX = clamp(e.clientX - rect.left - dragState.offsetX, 0, rect.width - 140);
-      const nextY = clamp(e.clientY - rect.top - dragState.offsetY, 0, rect.height - 72);
+      const nextX = clamp(e.clientX - rect.left - dragState.offsetX, 0, rect.width - 150);
+      const nextY = clamp(e.clientY - rect.top - dragState.offsetY, 0, rect.height - 84);
 
       setNodes((prev) =>
         prev.map((node) =>
@@ -188,6 +202,7 @@ function BuilderInner() {
         setError(data?.error || data?.message || "Failed to load formula");
         setFormula(null);
         setNodes([]);
+        setEdges([]);
         return;
       }
 
@@ -199,85 +214,84 @@ function BuilderInner() {
       setDescription(loadedFormula.description || "");
 
       let loadedNodes: BuilderNode[] = [];
+      let loadedEdges: BuilderEdge[] = [];
 
-      if (Array.isArray(loadedFormula.data?.nodes) && loadedFormula.data?.nodes.length) {
+      if (Array.isArray(loadedFormula.data?.nodes) && loadedFormula.data.nodes.length) {
         loadedNodes = loadedFormula.data.nodes.map((node, index) => ({
           id: node.id || makeNodeId(),
-          variableId: node.variableId,
-          type: node.type,
           label: node.label,
           quantity: node.quantity ?? 1,
-          x: node.x ?? 40 + index * 40,
-          y: node.y ?? 40 + index * 40,
+          x: node.x ?? 80 + index * 40,
+          y: node.y ?? 80 + index * 40,
         }));
-      } else {
-        const inputVariables = loadedVariables.filter(
-          (v) => v.type.toLowerCase() === "input"
-        );
-        const outputVariables = loadedVariables.filter(
-          (v) => v.type.toLowerCase() === "output"
-        );
 
-        loadedNodes = [
-          ...inputVariables.map((v, index) => ({
-            id: makeNodeId(),
-            variableId: v.id,
-            type: "input" as const,
-            label: v.name,
-            quantity: v.base_value ?? 1,
-            x: 40,
-            y: 40 + index * 100,
-          })),
-          ...outputVariables.map((v, index) => ({
-            id: makeNodeId(),
-            variableId: v.id,
-            type: "output" as const,
-            label: v.name,
-            quantity: v.base_value ?? 1,
-            x: 520,
-            y: 40 + index * 100,
-          })),
-        ];
+        loadedEdges = Array.isArray(loadedFormula.data?.edges)
+          ? loadedFormula.data.edges.map((edge) => ({
+              id: edge.id || makeEdgeId(),
+              from: edge.from,
+              to: edge.to,
+            }))
+          : [];
+      } else {
+        loadedNodes = loadedVariables.map((v, index) => ({
+          id: makeNodeId(),
+          label: v.name,
+          quantity: v.base_value ?? 1,
+          x: 100 + (index % 3) * 180,
+          y: 80 + Math.floor(index / 3) * 120,
+        }));
       }
 
       setNodes(loadedNodes);
+      setEdges(loadedEdges);
       setSelectedNodeId(loadedNodes[0]?.id ?? null);
+      setSelectedEdgeId(null);
+      setPendingConnectionFrom(null);
     } catch (err: any) {
       setError(err?.message || "Failed to load formula");
       setFormula(null);
       setNodes([]);
+      setEdges([]);
     } finally {
       setLoadingFormula(false);
     }
   }
 
-  function addNode(type: NodeType) {
-    const countOfType = nodes.filter((n) => n.type === type).length;
-
+  function addNode() {
     const newNode: BuilderNode = {
       id: makeNodeId(),
-      type,
-      label:
-        type === "input"
-          ? `Input ${countOfType + 1}`
-          : type === "output"
-          ? `Output ${countOfType + 1}`
-          : `Process ${countOfType + 1}`,
+      label: `Node ${nodes.length + 1}`,
       quantity: 1,
-      x: type === "input" ? 40 : type === "output" ? 520 : 280,
-      y: 60 + countOfType * 90,
+      x: 120 + (nodes.length % 3) * 160,
+      y: 100 + Math.floor(nodes.length / 3) * 100,
     };
 
     setNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(newNode.id);
+    setSelectedEdgeId(null);
   }
 
   function deleteSelectedNode() {
     if (!selectedNodeId) return;
 
-    const next = nodes.filter((node) => node.id !== selectedNodeId);
-    setNodes(next);
-    setSelectedNodeId(next[0]?.id ?? null);
+    const nextNodes = nodes.filter((node) => node.id !== selectedNodeId);
+    const nextEdges = edges.filter(
+      (edge) => edge.from !== selectedNodeId && edge.to !== selectedNodeId
+    );
+
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeId(nextNodes[0]?.id ?? null);
+    setSelectedEdgeId(null);
+    if (pendingConnectionFrom === selectedNodeId) {
+      setPendingConnectionFrom(null);
+    }
+  }
+
+  function deleteSelectedEdge() {
+    if (!selectedEdgeId) return;
+    setEdges((prev) => prev.filter((edge) => edge.id !== selectedEdgeId));
+    setSelectedEdgeId(null);
   }
 
   const selectedNode = useMemo(
@@ -299,6 +313,7 @@ function BuilderInner() {
     e: React.PointerEvent<HTMLDivElement>,
     node: BuilderNode
   ) {
+    if (connectMode) return;
     if (!canvasRef.current) return;
 
     const nodeRect = e.currentTarget.getBoundingClientRect();
@@ -306,6 +321,7 @@ function BuilderInner() {
     const offsetY = e.clientY - nodeRect.top;
 
     setSelectedNodeId(node.id);
+    setSelectedEdgeId(null);
     setDragState({
       nodeId: node.id,
       offsetX,
@@ -313,11 +329,78 @@ function BuilderInner() {
     });
   }
 
+  function handleNodeClick(nodeId: string) {
+    setSelectedNodeId(nodeId);
+    setSelectedEdgeId(null);
+
+    if (!connectMode) return;
+
+    if (!pendingConnectionFrom) {
+      setPendingConnectionFrom(nodeId);
+      return;
+    }
+
+    if (pendingConnectionFrom === nodeId) {
+      setPendingConnectionFrom(null);
+      return;
+    }
+
+    const alreadyExists = edges.some(
+      (edge) => edge.from === pendingConnectionFrom && edge.to === nodeId
+    );
+
+    if (!alreadyExists) {
+      const newEdge: BuilderEdge = {
+        id: makeEdgeId(),
+        from: pendingConnectionFrom,
+        to: nodeId,
+      };
+      setEdges((prev) => [...prev, newEdge]);
+    }
+
+    setPendingConnectionFrom(null);
+  }
+
+  function getNodeCenter(nodeId: string) {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return null;
+
+    return {
+      x: node.x + 75,
+      y: node.y + 42,
+    };
+  }
+
+  function deriveGraphGroups() {
+    const incomingCount = new Map<string, number>();
+    const outgoingCount = new Map<string, number>();
+
+    for (const node of nodes) {
+      incomingCount.set(node.id, 0);
+      outgoingCount.set(node.id, 0);
+    }
+
+    for (const edge of edges) {
+      outgoingCount.set(edge.from, (outgoingCount.get(edge.from) || 0) + 1);
+      incomingCount.set(edge.to, (incomingCount.get(edge.to) || 0) + 1);
+    }
+
+    const inputs = nodes.filter(
+      (node) => (incomingCount.get(node.id) || 0) === 0 && (outgoingCount.get(node.id) || 0) > 0
+    );
+
+    const outputs = nodes.filter(
+      (node) => (incomingCount.get(node.id) || 0) > 0 && (outgoingCount.get(node.id) || 0) === 0
+    );
+
+    return { inputs, outputs };
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!formulaId || !token) {
-      setSaveError("Missing formula id or token");
+    if (!token) {
+      setSaveError("Missing token");
       return;
     }
 
@@ -326,11 +409,22 @@ function BuilderInner() {
       return;
     }
 
-    const inputNodes = nodes.filter((node) => node.type === "input");
-    const outputNodes = nodes.filter((node) => node.type === "output");
+    if (nodes.length < 2) {
+      setSaveError("Add at least two nodes");
+      return;
+    }
 
-    if (inputNodes.length === 0 || outputNodes.length === 0) {
-      setSaveError("Formula must have at least one input and one output");
+    if (edges.length < 1) {
+      setSaveError("Create at least one connection");
+      return;
+    }
+
+    const { inputs, outputs } = deriveGraphGroups();
+
+    if (inputs.length === 0 || outputs.length === 0) {
+      setSaveError(
+        "Formula must have at least one start node and one end node connected"
+      );
       return;
     }
 
@@ -339,63 +433,96 @@ function BuilderInner() {
     setSaveSuccess("");
 
     try {
-      const payload = {
-        name: name.trim(),
-        description: description.trim() || null,
-        folder_id: formula?.folder_id ?? null,
-        data: {
-          ...(formula?.data || {}),
-          inputs: inputNodes.map((node) => ({
-            item: node.label.trim(),
-            quantity: Number(node.quantity) || 1,
-          })),
-          outputs: outputNodes.map((node) => ({
-            item: node.label.trim(),
-            quantity: Number(node.quantity) || 1,
-          })),
-          nodes,
-        },
-        variables: [
-          ...inputNodes.map((node) => ({
-            id: node.variableId,
-            name: node.label.trim(),
-            type: "input",
-            base_value: Number(node.quantity) || 1,
-          })),
-          ...outputNodes.map((node) => ({
-            id: node.variableId,
-            name: node.label.trim(),
-            type: "output",
-            base_value: Number(node.quantity) || 1,
-          })),
-        ],
+      const data = {
+        ...(formula?.data || {}),
+        inputs: inputs.map((node) => ({
+          item: node.label.trim(),
+          quantity: Number(node.quantity) || 1,
+        })),
+        outputs: outputs.map((node) => ({
+          item: node.label.trim(),
+          quantity: Number(node.quantity) || 1,
+        })),
+        nodes,
+        edges,
       };
 
-      const res = await fetch(`/backend/api/formulas/updateFormula/${formulaId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      if (formulaId) {
+        const payload = {
+          name: name.trim(),
+          description: description.trim() || null,
+          folder_id: formula?.folder_id ?? null,
+          data,
+          variables: [
+            ...inputs.map((node) => ({
+              name: node.label.trim(),
+              type: "input",
+              base_value: Number(node.quantity) || 1,
+            })),
+            ...outputs.map((node) => ({
+              name: node.label.trim(),
+              type: "output",
+              base_value: Number(node.quantity) || 1,
+            })),
+          ],
+        };
 
-      const text = await res.text();
-      let data: any = null;
+        const res = await fetch(`/backend/api/formulas/updateFormula/${formulaId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = { error: text || "Invalid server response" };
-      }
+        const text = await res.text();
+        let result: any = null;
 
-      if (!res.ok) {
-        setSaveError(data?.error || data?.message || "Failed to save formula");
-        return;
+        try {
+          result = text ? JSON.parse(text) : null;
+        } catch {
+          result = { error: text || "Invalid server response" };
+        }
+
+        if (!res.ok) {
+          setSaveError(result?.error || result?.message || "Failed to save formula");
+          return;
+        }
+      } else {
+        const payload = {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          folderId: null,
+          data,
+        };
+
+        const res = await fetch("/backend/api/formulas/createFormula", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        let result: any = null;
+
+        try {
+          result = text ? JSON.parse(text) : null;
+        } catch {
+          result = { error: text || "Invalid server response" };
+        }
+
+        if (!res.ok || !result?.success) {
+          setSaveError(result?.error || result?.message || "Failed to create formula");
+          return;
+        }
       }
 
       setSaveSuccess("Formula saved successfully");
-      await loadFormula(formulaId, token);
+      router.push("/frontend/portal/formulas");
     } catch (err: any) {
       setSaveError(err?.message || "Failed to save formula");
     } finally {
@@ -413,19 +540,11 @@ function BuilderInner() {
     return <main className={styles.page}>Loading user...</main>;
   }
 
-  if (!formulaId) {
-    return (
-      <main className={styles.page}>
-        <h1>Builder</h1>
-        <p>No formula selected.</p>
-        <Link href="/frontend/portal/formulas">Back to Formulas</Link>
-      </main>
-    );
-  }
-
   if (loadingFormula) {
     return <main className={styles.page}>Loading formula...</main>;
   }
+
+  const { inputs, outputs } = deriveGraphGroups();
 
   return (
     <main className={styles.page}>
@@ -433,7 +552,7 @@ function BuilderInner() {
         <div>
           <h1 className={styles.title}>Formula Builder</h1>
           <p className={styles.subtitle}>
-            Editing as <strong>{user?.username}</strong>
+            {formulaId ? "Editing existing formula" : "Creating new formula"}
           </p>
         </div>
 
@@ -472,14 +591,18 @@ function BuilderInner() {
           </label>
 
           <div className={styles.buttonRow}>
-            <button type="button" onClick={() => addNode("input")}>
-              Add Input
+            <button type="button" onClick={addNode}>
+              Add Node
             </button>
-            <button type="button" onClick={() => addNode("process")}>
-              Add Process
-            </button>
-            <button type="button" onClick={() => addNode("output")}>
-              Add Output
+            <button
+              type="button"
+              onClick={() => {
+                setConnectMode((prev) => !prev);
+                setPendingConnectionFrom(null);
+                setSelectedEdgeId(null);
+              }}
+            >
+              {connectMode ? "Exit Connect Mode" : "Connect Nodes"}
             </button>
           </div>
 
@@ -488,11 +611,6 @@ function BuilderInner() {
 
             {selectedNode ? (
               <>
-                <label className={styles.field}>
-                  <span>Type</span>
-                  <input value={selectedNode.type} disabled />
-                </label>
-
                 <label className={styles.field}>
                   <span>Label</span>
                   <input
@@ -531,15 +649,37 @@ function BuilderInner() {
             )}
           </div>
 
+          <div className={styles.selectedPanel}>
+            <h3>Selected Connection</h3>
+            {selectedEdgeId ? (
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={deleteSelectedEdge}
+              >
+                Delete Selected Connection
+              </button>
+            ) : (
+              <p>No connection selected.</p>
+            )}
+          </div>
+
           <div className={styles.metaPanel}>
-            <h3>Formula Summary</h3>
-            <p>Inputs: {nodes.filter((n) => n.type === "input").length}</p>
-            <p>Processes: {nodes.filter((n) => n.type === "process").length}</p>
-            <p>Outputs: {nodes.filter((n) => n.type === "output").length}</p>
+            <h3>Derived Graph Roles</h3>
+            <p>Start nodes (inputs): {inputs.length}</p>
+            <p>End nodes (outputs): {outputs.length}</p>
+            <p>Total nodes: {nodes.length}</p>
+            <p>Total connections: {edges.length}</p>
+            {connectMode ? (
+              <p>
+                Connect mode active
+                {pendingConnectionFrom ? " — choose destination node" : " — choose source node"}
+              </p>
+            ) : null}
           </div>
 
           <button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Formula"}
+            {saving ? "Saving..." : formulaId ? "Save Formula" : "Create Formula"}
           </button>
 
           {saveError ? <p className={styles.error}>{saveError}</p> : null}
@@ -549,24 +689,52 @@ function BuilderInner() {
         <section className={styles.canvasPanel}>
           <div className={styles.canvasHeader}>
             <h2>Canvas</h2>
-            <p>Drag nodes to arrange the formula flow.</p>
+            <p>
+              Drag nodes to arrange them. Use connect mode to create directed links.
+            </p>
           </div>
 
           <div ref={canvasRef} className={styles.canvas}>
+            <svg className={styles.edgeLayer}>
+              {edges.map((edge) => {
+                const from = getNodeCenter(edge.from);
+                const to = getNodeCenter(edge.to);
+                if (!from || !to) return null;
+
+                return (
+                  <line
+                    key={edge.id}
+                    x1={from.x}
+                    y1={from.y}
+                    x2={to.x}
+                    y2={to.y}
+                    className={`${styles.edge} ${
+                      selectedEdgeId === edge.id ? styles.edgeSelected : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedEdgeId(edge.id);
+                      setSelectedNodeId(null);
+                    }}
+                  />
+                );
+              })}
+            </svg>
+
             {nodes.map((node) => (
               <div
                 key={node.id}
-                className={`${styles.node} ${styles[node.type]} ${
+                className={`${styles.node} ${
                   selectedNodeId === node.id ? styles.selected : ""
+                } ${
+                  pendingConnectionFrom === node.id ? styles.pendingConnection : ""
                 }`}
                 style={{
                   left: `${node.x}px`,
                   top: `${node.y}px`,
                 }}
                 onPointerDown={(e) => beginDrag(e, node)}
-                onClick={() => setSelectedNodeId(node.id)}
+                onClick={() => handleNodeClick(node.id)}
               >
-                <div className={styles.nodeType}>{node.type}</div>
                 <div className={styles.nodeLabel}>{node.label}</div>
                 <div className={styles.nodeQty}>x{node.quantity}</div>
               </div>
@@ -574,7 +742,7 @@ function BuilderInner() {
 
             {nodes.length === 0 ? (
               <div className={styles.emptyCanvas}>
-                Add input, process, or output nodes to begin building.
+                Add nodes, move them around, and connect them to build a formula.
               </div>
             ) : null}
           </div>
