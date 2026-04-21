@@ -107,7 +107,7 @@
   opacity: 0.8;
 }
 
-.canvas {
+.canvasViewport {
   position: relative;
   min-height: 680px;
   border-radius: 24px;
@@ -117,6 +117,18 @@
     #fceedb;
   background-size: 24px 24px;
   overflow: hidden;
+  cursor: grab;
+}
+
+.canvasViewport:active {
+  cursor: grabbing;
+}
+
+.canvasWorld {
+  position: relative;
+  width: 2800px;
+  height: 1800px;
+  transform-origin: 0 0;
 }
 
 .edgeLayer {
@@ -139,12 +151,12 @@
 
 .node {
   position: absolute;
-  width: 144px;
-  min-height: 84px;
+  width: 176px;
+  min-height: 96px;
   background: #f6afc4;
   color: #544137;
   border-radius: 20px;
-  padding: 12px;
+  padding: 14px;
   box-shadow: 0 10px 20px rgba(84, 65, 55, 0.12);
   border: 2px solid transparent;
   cursor: grab;

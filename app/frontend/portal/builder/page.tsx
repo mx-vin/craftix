@@ -63,11 +63,23 @@ type GetFormulaResponse = {
   success?: boolean;
 };
 
-type DragState = {
+type NodeDragState = {
   nodeId: string;
   offsetX: number;
   offsetY: number;
 } | null;
+
+type CanvasPanState = {
+  startX: number;
+  startY: number;
+  originX: number;
+  originY: number;
+} | null;
+
+type CanvasOffset = {
+  x: number;
+  y: number;
+};
 
 function makeNodeId() {
   return `node-${crypto.randomUUID()}`;
@@ -89,7 +101,8 @@ function toPositiveNumber(value: string) {
 function BuilderInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const canvasRef = useRef<HTMLDivElement | null>(null);
+
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
 
   const [user, setUser] = useState<StoredUser | null>(null);
   const [token, setToken] = useState("");
@@ -109,7 +122,10 @@ function BuilderInner() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const [dragState, setDragState] = useState<DragState>(null);
+
+  const [nodeDragState, setNodeDragState] = useState<NodeDragState>(null);
+  const [canvasPanState, setCanvasPanState] = useState<CanvasPanState>(null);
+  const [canvasOffset, setCanvasOffset] = useState<CanvasOffset>({ x: 0, y: 0 });
 
   const [connectMode, setConnectMode] = useState(false);
   const [pendingConnectionFrom, setPendingConnectionFrom] = useState<string | null>(null);
@@ -152,21 +168,43 @@ function BuilderInner() {
 
   useEffect(() => {
     function handlePointerMove(e: PointerEvent) {
-      if (!dragState || !canvasRef.current) return;
+      if (nodeDragState) {
+        const viewport = canvasViewportRef.current;
+        if (!viewport) return;
 
-      const rect = canvasRef.current.getBoundingClientRect();
-      const nextX = clamp(e.clientX - rect.left - dragState.offsetX, 0, rect.width - 150);
-      const nextY = clamp(e.clientY - rect.top - dragState.offsetY, 0, rect.height - 84);
+        const rect = viewport.getBoundingClientRect();
 
-      setNodes((prev) =>
-        prev.map((node) =>
-          node.id === dragState.nodeId ? { ...node, x: nextX, y: nextY } : node
-        )
-      );
+        const nextX = e.clientX - rect.left - nodeDragState.offsetX - canvasOffset.x;
+        const nextY = e.clientY - rect.top - nodeDragState.offsetY - canvasOffset.y;
+
+        setNodes((prev) =>
+          prev.map((node) =>
+            node.id === nodeDragState.nodeId
+              ? {
+                  ...node,
+                  x: clamp(nextX, -2000, 2000),
+                  y: clamp(nextY, -2000, 2000),
+                }
+              : node
+          )
+        );
+        return;
+      }
+
+      if (canvasPanState) {
+        const dx = e.clientX - canvasPanState.startX;
+        const dy = e.clientY - canvasPanState.startY;
+
+        setCanvasOffset({
+          x: canvasPanState.originX + dx,
+          y: canvasPanState.originY + dy,
+        });
+      }
     }
 
     function handlePointerUp() {
-      setDragState(null);
+      setNodeDragState(null);
+      setCanvasPanState(null);
     }
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -176,7 +214,7 @@ function BuilderInner() {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [dragState]);
+  }, [nodeDragState, canvasPanState, canvasOffset.x, canvasOffset.y]);
 
   async function loadFormula(id: string, bearerToken: string) {
     setLoadingFormula(true);
@@ -239,8 +277,8 @@ function BuilderInner() {
           id: makeNodeId(),
           label: v.name,
           quantity: String(v.base_value ?? 1),
-          x: 100 + (index % 3) * 180,
-          y: 80 + Math.floor(index / 3) * 120,
+          x: 100 + (index % 3) * 220,
+          y: 80 + Math.floor(index / 3) * 140,
         }));
       }
 
@@ -249,6 +287,7 @@ function BuilderInner() {
       setSelectedNodeId(loadedNodes[0]?.id ?? null);
       setSelectedEdgeId(null);
       setPendingConnectionFrom(null);
+      setCanvasOffset({ x: 0, y: 0 });
     } catch (err: any) {
       setError(err?.message || "Failed to load formula");
       setFormula(null);
@@ -264,8 +303,8 @@ function BuilderInner() {
       id: makeNodeId(),
       label: `Node ${nodes.length + 1}`,
       quantity: "1",
-      x: 120 + (nodes.length % 3) * 160,
-      y: 100 + Math.floor(nodes.length / 3) * 100,
+      x: 160 + (nodes.length % 4) * 220,
+      y: 120 + Math.floor(nodes.length / 4) * 140,
     };
 
     setNodes((prev) => [...prev, newNode]);
@@ -316,9 +355,11 @@ function BuilderInner() {
     );
   }
 
-  function beginDrag(e: React.PointerEvent<HTMLDivElement>, node: BuilderNode) {
+  function beginNodeDrag(e: React.PointerEvent<HTMLDivElement>, node: BuilderNode) {
     if (connectMode) return;
-    if (!canvasRef.current) return;
+    if (!canvasViewportRef.current) return;
+
+    e.stopPropagation();
 
     const nodeRect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - nodeRect.left;
@@ -326,10 +367,22 @@ function BuilderInner() {
 
     setSelectedNodeId(node.id);
     setSelectedEdgeId(null);
-    setDragState({
+    setNodeDragState({
       nodeId: node.id,
       offsetX,
       offsetY,
+    });
+  }
+
+  function beginCanvasPan(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).dataset.role === "node") return;
+    if (connectMode) return;
+
+    setCanvasPanState({
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: canvasOffset.x,
+      originY: canvasOffset.y,
     });
   }
 
@@ -368,7 +421,7 @@ function BuilderInner() {
   function getNodeCenter(nodeId: string) {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return null;
-    return { x: node.x + 72, y: node.y + 42 };
+    return { x: node.x + 88, y: node.y + 48 };
   }
 
   function deriveGraphGroups() {
@@ -385,13 +438,8 @@ function BuilderInner() {
       incomingCount.set(edge.to, (incomingCount.get(edge.to) || 0) + 1);
     }
 
-    const inputs = nodes.filter(
-      (node) => (incomingCount.get(node.id) || 0) === 0 && (outgoingCount.get(node.id) || 0) > 0
-    );
-
-    const outputs = nodes.filter(
-      (node) => (incomingCount.get(node.id) || 0) > 0 && (outgoingCount.get(node.id) || 0) === 0
-    );
+    const inputs = nodes.filter((node) => (incomingCount.get(node.id) || 0) === 0);
+    const outputs = nodes.filter((node) => (outgoingCount.get(node.id) || 0) === 0);
 
     return { inputs, outputs };
   }
@@ -422,7 +470,7 @@ function BuilderInner() {
     const { inputs, outputs } = deriveGraphGroups();
 
     if (inputs.length === 0 || outputs.length === 0) {
-      setSaveError("Formula must have at least one start node and one end node connected");
+      setSaveError("Formula must have at least one source node and one final output node");
       return;
     }
 
@@ -655,8 +703,8 @@ function BuilderInner() {
 
             <div className={styles.card}>
               <h3>Derived Structure</h3>
-              <p>Start nodes: {inputs.length}</p>
-              <p>End nodes: {outputs.length}</p>
+              <p>Source nodes: {inputs.length}</p>
+              <p>Final outputs: {outputs.length}</p>
               <p>Total nodes: {nodes.length}</p>
               <p>Total connections: {edges.length}</p>
               {connectMode ? (
@@ -665,7 +713,9 @@ function BuilderInner() {
                     ? "Choose destination node"
                     : "Choose source node"}
                 </p>
-              ) : null}
+              ) : (
+                <p>Drag empty canvas space to pan</p>
+              )}
             </div>
 
             <button type="submit" className={styles.saveButton} disabled={saving}>
@@ -679,60 +729,74 @@ function BuilderInner() {
         <section className={styles.canvasPanel}>
           <div className={styles.canvasHeader}>
             <h2>Canvas</h2>
-            <p>Arrange nodes and create connections like the example site.</p>
+            <p>
+              Drag nodes to place them. Drag empty canvas space to pan across larger formulas.
+            </p>
           </div>
 
-          <div ref={canvasRef} className={styles.canvas}>
-            <svg className={styles.edgeLayer}>
-              {edges.map((edge) => {
-                const from = getNodeCenter(edge.from);
-                const to = getNodeCenter(edge.to);
-                if (!from || !to) return null;
+          <div
+            ref={canvasViewportRef}
+            className={styles.canvasViewport}
+            onPointerDown={beginCanvasPan}
+          >
+            <div
+              className={styles.canvasWorld}
+              style={{
+                transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
+              }}
+            >
+              <svg className={styles.edgeLayer}>
+                {edges.map((edge) => {
+                  const from = getNodeCenter(edge.from);
+                  const to = getNodeCenter(edge.to);
+                  if (!from || !to) return null;
 
-                return (
-                  <line
-                    key={edge.id}
-                    x1={from.x}
-                    y1={from.y}
-                    x2={to.x}
-                    y2={to.y}
-                    className={`${styles.edge} ${
-                      selectedEdgeId === edge.id ? styles.edgeSelected : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedEdgeId(edge.id);
-                      setSelectedNodeId(null);
-                    }}
-                  />
-                );
-              })}
-            </svg>
+                  return (
+                    <line
+                      key={edge.id}
+                      x1={from.x}
+                      y1={from.y}
+                      x2={to.x}
+                      y2={to.y}
+                      className={`${styles.edge} ${
+                        selectedEdgeId === edge.id ? styles.edgeSelected : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedEdgeId(edge.id);
+                        setSelectedNodeId(null);
+                      }}
+                    />
+                  );
+                })}
+              </svg>
 
-            {nodes.map((node) => (
-              <div
-                key={node.id}
-                className={`${styles.node} ${
-                  selectedNodeId === node.id ? styles.nodeSelected : ""
-                } ${
-                  pendingConnectionFrom === node.id ? styles.nodePending : ""
-                }`}
-                style={{
-                  left: `${node.x}px`,
-                  top: `${node.y}px`,
-                }}
-                onPointerDown={(e) => beginDrag(e, node)}
-                onClick={() => handleNodeClick(node.id)}
-              >
-                <div className={styles.nodeLabel}>{node.label}</div>
-                <div className={styles.nodeQty}>x{node.quantity || ""}</div>
-              </div>
-            ))}
+              {nodes.map((node) => (
+                <div
+                  key={node.id}
+                  data-role="node"
+                  className={`${styles.node} ${
+                    selectedNodeId === node.id ? styles.nodeSelected : ""
+                  } ${
+                    pendingConnectionFrom === node.id ? styles.nodePending : ""
+                  }`}
+                  style={{
+                    left: `${node.x}px`,
+                    top: `${node.y}px`,
+                  }}
+                  onPointerDown={(e) => beginNodeDrag(e, node)}
+                  onClick={() => handleNodeClick(node.id)}
+                >
+                  <div className={styles.nodeLabel}>{node.label}</div>
+                  <div className={styles.nodeQty}>x{node.quantity || ""}</div>
+                </div>
+              ))}
 
-            {nodes.length === 0 ? (
-              <div className={styles.emptyCanvas}>
-                Add nodes, drag them into place, and connect them.
-              </div>
-            ) : null}
+              {nodes.length === 0 ? (
+                <div className={styles.emptyCanvas}>
+                  Add nodes, drag them into place, and connect them.
+                </div>
+              ) : null}
+            </div>
           </div>
         </section>
       </div>
