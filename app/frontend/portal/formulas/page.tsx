@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopNav from "../../ui/TopNav";
 import styles from "./formulas.module.css";
@@ -59,6 +59,10 @@ type CalculationResult = {
   success?: boolean;
   used?: Record<string, number>;
   results?: Record<string, number>;
+  nodeValues?: Record<string, number>;
+  sourceNodes?: string[];
+  sinkNodes?: string[];
+  scale?: number;
   error?: string;
   message?: string;
 };
@@ -69,8 +73,21 @@ type FolderGroup = {
   count: number;
 };
 
+type CanvasOffset = {
+  x: number;
+  y: number;
+};
+
+type PanState = {
+  startX: number;
+  startY: number;
+  originX: number;
+  originY: number;
+} | null;
+
 export default function FormulasPage() {
   const router = useRouter();
+  const viewportRef = useRef<HTMLDivElement | null>(null);
 
   const [user, setUser] = useState<StoredUser | null>(null);
   const [token, setToken] = useState<string>("");
@@ -88,6 +105,9 @@ export default function FormulasPage() {
   const [calculating, setCalculating] = useState<Record<string, boolean>>({});
   const [calculationErrors, setCalculationErrors] = useState<Record<string, string>>({});
   const [calculationResults, setCalculationResults] = useState<Record<string, CalculationResult>>({});
+
+  const [canvasOffset, setCanvasOffset] = useState<CanvasOffset>({ x: 0, y: 0 });
+  const [panState, setPanState] = useState<PanState>(null);
 
   useEffect(() => {
     const rawToken = localStorage.getItem("token");
@@ -117,7 +137,34 @@ export default function FormulasPage() {
   useEffect(() => {
     setSelectedCalcNodeId(null);
     setSelectedOverrideValue("");
+    setCanvasOffset({ x: 0, y: 0 });
   }, [selectedFormulaId]);
+
+  useEffect(() => {
+    function handlePointerMove(e: PointerEvent) {
+      if (!panState) return;
+
+      const dx = e.clientX - panState.startX;
+      const dy = e.clientY - panState.startY;
+
+      setCanvasOffset({
+        x: panState.originX + dx,
+        y: panState.originY + dy,
+      });
+    }
+
+    function handlePointerUp() {
+      setPanState(null);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [panState]);
 
   async function loadFormulas(userId: string, bearerToken: string) {
     setLoading(true);
@@ -309,11 +356,28 @@ export default function FormulasPage() {
   function getNodeCenter(nodeId: string) {
     const node = selectedFormula?.data?.nodes?.find((n) => n.id === nodeId);
     if (!node) return null;
-    return { x: node.x + 64, y: node.y + 36 };
+    return { x: node.x + 88, y: node.y + 48 };
   }
 
   const selectedCalcNode =
     selectedFormula?.data?.nodes?.find((node) => node.id === selectedCalcNodeId) || null;
+
+  function getNodeDisplayValue(node: FormulaNode) {
+    const calculation = selectedFormula ? calculationResults[selectedFormula.id] : null;
+    if (!calculation?.nodeValues) return null;
+    return calculation.nodeValues[node.id];
+  }
+
+  function beginPan(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).dataset.role === "graph-node") return;
+
+    setPanState({
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: canvasOffset.x,
+      originY: canvasOffset.y,
+    });
+  }
 
   if (!user) {
     return <main className={styles.page}>Loading user...</main>;
@@ -425,90 +489,107 @@ export default function FormulasPage() {
                 <div className={styles.graphPanel}>
                   <div className={styles.graphHeader}>
                     <h3>Formula Graph</h3>
-                    <p>Click a node to select it for calculation override.</p>
+                    <p>Click a node to select it for override. Drag empty space to pan.</p>
                   </div>
 
-                  <div className={styles.graphCanvas}>
-                    <svg className={styles.edgeLayer}>
-                      {(selectedFormula.data?.edges || []).map((edge) => {
-                        const from = getNodeCenter(edge.from);
-                        const to = getNodeCenter(edge.to);
-                        if (!from || !to) return null;
+                  <div
+                    ref={viewportRef}
+                    className={styles.graphViewport}
+                    onPointerDown={beginPan}
+                  >
+                    <div
+                      className={styles.graphWorld}
+                      style={{
+                        transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
+                      }}
+                    >
+                      <svg className={styles.edgeLayer}>
+                        {(selectedFormula.data?.edges || []).map((edge) => {
+                          const from = getNodeCenter(edge.from);
+                          const to = getNodeCenter(edge.to);
+                          if (!from || !to) return null;
 
-                        return (
-                          <line
-                            key={edge.id}
-                            x1={from.x}
-                            y1={from.y}
-                            x2={to.x}
-                            y2={to.y}
-                            className={styles.edge}
-                          />
-                        );
-                      })}
-                    </svg>
+                          return (
+                            <line
+                              key={edge.id}
+                              x1={from.x}
+                              y1={from.y}
+                              x2={to.x}
+                              y2={to.y}
+                              className={styles.edge}
+                            />
+                          );
+                        })}
+                      </svg>
 
-                    {(selectedFormula.data?.nodes || []).length > 0 ? (
-                      (selectedFormula.data?.nodes || []).map((node) => (
-                        <button
-                          key={node.id}
-                          type="button"
-                          className={
-                            selectedCalcNodeId === node.id
-                              ? `${styles.graphNode} ${styles.graphNodeSelected}`
-                              : styles.graphNode
-                          }
-                          style={{
-                            left: `${node.x}px`,
-                            top: `${node.y}px`,
-                          }}
-                          onClick={() => {
-                            setSelectedCalcNodeId(node.id);
-                            setSelectedOverrideValue("");
-                          }}
-                        >
-                          <div className={styles.graphNodeLabel}>{node.label}</div>
-                          <div className={styles.graphNodeQty}>
-                            x{node.quantity ?? ""}
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className={styles.graphFallback}>
-                        No saved graph nodes yet.
-                      </div>
-                    )}
+                      {(selectedFormula.data?.nodes || []).length > 0 ? (
+                        (selectedFormula.data?.nodes || []).map((node) => {
+                          const displayValue = getNodeDisplayValue(node);
+
+                          return (
+                            <button
+                              key={node.id}
+                              type="button"
+                              data-role="graph-node"
+                              className={
+                                selectedCalcNodeId === node.id
+                                  ? `${styles.graphNode} ${styles.graphNodeSelected}`
+                                  : styles.graphNode
+                              }
+                              style={{
+                                left: `${node.x}px`,
+                                top: `${node.y}px`,
+                              }}
+                              onClick={() => {
+                                setSelectedCalcNodeId(node.id);
+                                setSelectedOverrideValue("");
+                              }}
+                            >
+                              <div className={styles.graphNodeLabel}>{node.label}</div>
+                              <div className={styles.graphNodeQty}>
+                                x{node.quantity ?? ""}
+                              </div>
+                              {displayValue !== null && displayValue !== undefined ? (
+                                <div className={styles.graphNodeComputed}>
+                                  = {displayValue}
+                                </div>
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className={styles.graphFallback}>
+                          No saved graph nodes yet.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className={styles.sideCards}>
                   <div className={styles.infoCard}>
-                    <h3>Derived Inputs</h3>
-                    {(selectedFormula.data?.inputs || []).length > 0 ? (
+                    <h3>Derived Source Nodes</h3>
+                    {(calculationResults[selectedFormula.id]?.sourceNodes || selectedFormula.data?.inputs?.map(i => i.item) || []).length > 0 ? (
                       <ul>
-                        {(selectedFormula.data?.inputs || []).map((input, index) => (
-                          <li key={`input-${index}`}>
-                            {input.item} x{input.quantity ?? 1}
-                          </li>
+                        {(calculationResults[selectedFormula.id]?.sourceNodes || selectedFormula.data?.inputs?.map(i => i.item) || []).map((item, index) => (
+                          <li key={`source-${index}`}>{item}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p>No derived inputs</p>
+                      <p>No source nodes</p>
                     )}
                   </div>
 
                   <div className={styles.infoCard}>
-                    <h3>Derived Outputs</h3>
-                    {(selectedFormula.data?.outputs || []).length > 0 ? (
+                    <h3>Derived Final Outputs</h3>
+                    {(calculationResults[selectedFormula.id]?.sinkNodes || selectedFormula.data?.outputs?.map(o => o.item) || []).length > 0 ? (
                       <ul>
-                        {(selectedFormula.data?.outputs || []).map((output, index) => (
-                          <li key={`output-${index}`}>
-                            {output.item} x{output.quantity ?? 1}
-                          </li>
+                        {(calculationResults[selectedFormula.id]?.sinkNodes || selectedFormula.data?.outputs?.map(o => o.item) || []).map((item, index) => (
+                          <li key={`sink-${index}`}>{item}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p>No derived outputs</p>
+                      <p>No final outputs</p>
                     )}
                   </div>
 
@@ -545,6 +626,12 @@ export default function FormulasPage() {
                     {calculationErrors[selectedFormula.id] ? (
                       <p className={styles.error}>
                         {calculationErrors[selectedFormula.id]}
+                      </p>
+                    ) : null}
+
+                    {calculationResults[selectedFormula.id]?.scale !== undefined ? (
+                      <p className={styles.scaleText}>
+                        Scale: {calculationResults[selectedFormula.id]?.scale}
                       </p>
                     ) : null}
 

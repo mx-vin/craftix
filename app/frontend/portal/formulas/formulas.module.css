@@ -182,7 +182,7 @@
   opacity: 0.75;
 }
 
-.graphCanvas {
+.graphViewport {
   position: relative;
   min-height: 520px;
   border-radius: 20px;
@@ -191,6 +191,18 @@
     linear-gradient(to bottom, rgba(84, 65, 55, 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
   overflow: hidden;
+  cursor: grab;
+}
+
+.graphViewport:active {
+  cursor: grabbing;
+}
+
+.graphWorld {
+  position: relative;
+  width: 2800px;
+  height: 1800px;
+  transform-origin: 0 0;
 }
 
 .edgeLayer {
@@ -207,8 +219,8 @@
 
 .graphNode {
   position: absolute;
-  width: 128px;
-  min-height: 72px;
+  width: 176px;
+  min-height: 96px;
   border-radius: 18px;
   background: #f6afc4;
   color: #544137;
@@ -216,6 +228,7 @@
   box-shadow: 0 10px 20px rgba(84, 65, 55, 0.12);
   border: 2px solid transparent;
   cursor: pointer;
+  text-align: left;
 }
 
 .graphNodeSelected {
@@ -229,6 +242,12 @@
 
 .graphNodeQty {
   font-size: 0.95rem;
+}
+
+.graphNodeComputed {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  opacity: 0.9;
 }
 
 .graphFallback {
@@ -271,6 +290,11 @@
 .calcButton {
   background: #544137;
   color: #fceedb;
+}
+
+.scaleText {
+  margin-top: 12px;
+  font-weight: 700;
 }
 
 .calcResults {
