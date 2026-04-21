@@ -1,3 +1,44 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import styles from "./TopNav.module.css";
+
 export default function TopNav() {
-  return <header>TopNav</header>;
+  const router = useRouter();
+  const pathname = usePathname();
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/frontend/portal/login");
+  }
+
+  function linkClass(href: string) {
+    return pathname === href ? `${styles.link} ${styles.active}` : styles.link;
+  }
+
+  return (
+    <header className={styles.header}>
+      <div className={styles.brand}>craftix</div>
+
+      <nav className={styles.nav}>
+        <Link href="/frontend/portal/formulas" className={linkClass("/frontend/portal/formulas")}>
+          Home
+        </Link>
+        <Link href="/frontend/portal/marketplace" className={linkClass("/frontend/portal/marketplace")}>
+          Marketplace
+        </Link>
+        <Link href="/frontend/portal/profile" className={linkClass("/frontend/portal/profile")}>
+          Profile
+        </Link>
+        <Link href="/frontend/portal/settings" className={linkClass("/frontend/portal/settings")}>
+          Settings
+        </Link>
+        <button type="button" className={styles.logout} onClick={handleLogout}>
+          Logout
+        </button>
+      </nav>
+    </header>
+  );
 }

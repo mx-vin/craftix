@@ -1,0 +1,294 @@
+.page {
+  min-height: 100vh;
+  background: #8a7866;
+  color: #544137;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+.sidebar {
+  background: #fceedb;
+  border-radius: 24px;
+  padding: 20px;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+  min-height: calc(100vh - 126px);
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6afc4;
+  color: #544137;
+  text-decoration: none;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.folderSection,
+.formulaSection {
+  margin-top: 24px;
+}
+
+.sectionLabel {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.folderList,
+.formulaList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.folderButton,
+.formulaCard {
+  width: 100%;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+  background: #fff7ef;
+  color: #544137;
+  border-radius: 18px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.folderButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.folderButtonActive,
+.formulaCardActive {
+  background: #f6afc4;
+}
+
+.folderCount {
+  background: rgba(84, 65, 55, 0.1);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.formulaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formulaCard span {
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.mainPanel {
+  background: rgba(252, 238, 219, 0.72);
+  border-radius: 28px;
+  padding: 24px;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.mainTitle {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.mainSubtitle {
+  margin: 8px 0 0;
+  opacity: 0.85;
+}
+
+.actionRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.editButton,
+.deleteButton,
+.calcButton {
+  border: 0;
+  border-radius: 16px;
+  padding: 12px 16px;
+  text-decoration: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editButton {
+  background: #544137;
+  color: #fceedb;
+}
+
+.deleteButton {
+  background: #f6afc4;
+  color: #544137;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr;
+  gap: 20px;
+}
+
+.graphPanel,
+.infoCard {
+  background: #fceedb;
+  border-radius: 22px;
+  padding: 18px;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+}
+
+.graphHeader h3,
+.infoCard h3 {
+  margin: 0 0 8px;
+}
+
+.graphHeader p {
+  margin: 0 0 12px;
+  opacity: 0.75;
+}
+
+.graphCanvas {
+  position: relative;
+  min-height: 520px;
+  border-radius: 20px;
+  background:
+    linear-gradient(to right, rgba(84, 65, 55, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(84, 65, 55, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  overflow: hidden;
+}
+
+.edgeLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.edge {
+  stroke: #544137;
+  stroke-width: 3;
+}
+
+.graphNode {
+  position: absolute;
+  width: 128px;
+  min-height: 72px;
+  border-radius: 18px;
+  background: #f6afc4;
+  color: #544137;
+  padding: 12px;
+  box-shadow: 0 10px 20px rgba(84, 65, 55, 0.12);
+}
+
+.graphNodeLabel {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.graphNodeQty {
+  font-size: 0.95rem;
+}
+
+.graphFallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(84, 65, 55, 0.7);
+}
+
+.sideCards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoCard ul {
+  margin: 8px 0 0 18px;
+  padding: 0;
+}
+
+.calcFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calcFields input {
+  border: 1px solid rgba(84, 65, 55, 0.14);
+  background: #fff7ef;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.calcButton {
+  background: #544137;
+  color: #fceedb;
+}
+
+.calcResults {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.emptyState {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.error {
+  color: #8b1e48;
+}
+
+@media (max-width: 1100px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    min-height: auto;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}

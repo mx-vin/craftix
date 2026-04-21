@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import TopNav from "../../ui/TopNav";
 import styles from "./builder.module.css";
 
 type StoredUser = {
@@ -100,7 +101,6 @@ function BuilderInner() {
 
   const [error, setError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [saveSuccess, setSaveSuccess] = useState("");
 
   const [formula, setFormula] = useState<FormulaRecord | null>(null);
 
@@ -155,22 +155,12 @@ function BuilderInner() {
       if (!dragState || !canvasRef.current) return;
 
       const rect = canvasRef.current.getBoundingClientRect();
-      const nextX = clamp(
-        e.clientX - rect.left - dragState.offsetX,
-        0,
-        rect.width - 150
-      );
-      const nextY = clamp(
-        e.clientY - rect.top - dragState.offsetY,
-        0,
-        rect.height - 84
-      );
+      const nextX = clamp(e.clientX - rect.left - dragState.offsetX, 0, rect.width - 150);
+      const nextY = clamp(e.clientY - rect.top - dragState.offsetY, 0, rect.height - 84);
 
       setNodes((prev) =>
         prev.map((node) =>
-          node.id === dragState.nodeId
-            ? { ...node, x: nextX, y: nextY }
-            : node
+          node.id === dragState.nodeId ? { ...node, x: nextX, y: nextY } : node
         )
       );
     }
@@ -191,7 +181,6 @@ function BuilderInner() {
   async function loadFormula(id: string, bearerToken: string) {
     setLoadingFormula(true);
     setError("");
-    setSaveSuccess("");
     setSaveError("");
 
     try {
@@ -317,16 +306,11 @@ function BuilderInner() {
     if (!selectedNodeId) return;
 
     setNodes((prev) =>
-      prev.map((node) =>
-        node.id === selectedNodeId ? { ...node, ...patch } : node
-      )
+      prev.map((node) => (node.id === selectedNodeId ? { ...node, ...patch } : node))
     );
   }
 
-  function beginDrag(
-    e: React.PointerEvent<HTMLDivElement>,
-    node: BuilderNode
-  ) {
+  function beginDrag(e: React.PointerEvent<HTMLDivElement>, node: BuilderNode) {
     if (connectMode) return;
     if (!canvasRef.current) return;
 
@@ -378,11 +362,7 @@ function BuilderInner() {
   function getNodeCenter(nodeId: string) {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return null;
-
-    return {
-      x: node.x + 75,
-      y: node.y + 42,
-    };
+    return { x: node.x + 72, y: node.y + 42 };
   }
 
   function deriveGraphGroups() {
@@ -400,15 +380,11 @@ function BuilderInner() {
     }
 
     const inputs = nodes.filter(
-      (node) =>
-        (incomingCount.get(node.id) || 0) === 0 &&
-        (outgoingCount.get(node.id) || 0) > 0
+      (node) => (incomingCount.get(node.id) || 0) === 0 && (outgoingCount.get(node.id) || 0) > 0
     );
 
     const outputs = nodes.filter(
-      (node) =>
-        (incomingCount.get(node.id) || 0) > 0 &&
-        (outgoingCount.get(node.id) || 0) === 0
+      (node) => (incomingCount.get(node.id) || 0) > 0 && (outgoingCount.get(node.id) || 0) === 0
     );
 
     return { inputs, outputs };
@@ -440,15 +416,12 @@ function BuilderInner() {
     const { inputs, outputs } = deriveGraphGroups();
 
     if (inputs.length === 0 || outputs.length === 0) {
-      setSaveError(
-        "Formula must have at least one start node and one end node connected"
-      );
+      setSaveError("Formula must have at least one start node and one end node connected");
       return;
     }
 
     setSaving(true);
     setSaveError("");
-    setSaveSuccess("");
 
     try {
       const data = {
@@ -539,19 +512,12 @@ function BuilderInner() {
         }
       }
 
-      setSaveSuccess("Formula saved successfully");
       router.push("/frontend/portal/formulas");
     } catch (err: any) {
       setSaveError(err?.message || "Failed to save formula");
     } finally {
       setSaving(false);
     }
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/frontend/portal/login");
   }
 
   if (loadingUser) {
@@ -566,157 +532,139 @@ function BuilderInner() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Formula Builder</h1>
-          <p className={styles.subtitle}>
-            {formulaId ? "Editing existing formula" : "Creating new formula"}
-          </p>
-        </div>
+      <TopNav />
 
-        <div className={styles.headerLinks}>
-          <Link href="/frontend">Home</Link>
-          <Link href="/frontend/portal/formulas">Back to Formulas</Link>
-          <button type="button" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
+      <div className={styles.shell}>
+        <section className={styles.sidebar}>
+          <h2 className={styles.sidebarTitle}>
+            {formulaId ? "Edit Formula" : "Create Formula"}
+          </h2>
 
-      {error ? <p className={styles.error}>{error}</p> : null}
+          <form className={styles.form} onSubmit={handleSave}>
+            <label className={styles.field}>
+              <span>Name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </label>
 
-      <div className={styles.layout}>
-        <form className={styles.sidebar} onSubmit={handleSave}>
-          <h2>Formula Details</h2>
+            <label className={styles.field}>
+              <span>Description</span>
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </label>
 
-          <label className={styles.field}>
-            <span>Name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </label>
+            <div className={styles.builderButtons}>
+              <button type="button" onClick={addNode}>
+                Add Node
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConnectMode((prev) => !prev);
+                  setPendingConnectionFrom(null);
+                  setSelectedEdgeId(null);
+                }}
+              >
+                {connectMode ? "Exit Connect Mode" : "Connect Nodes"}
+              </button>
+            </div>
 
-          <label className={styles.field}>
-            <span>Description</span>
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
+            <div className={styles.card}>
+              <h3>Selected Node</h3>
+              {selectedNode ? (
+                <>
+                  <label className={styles.field}>
+                    <span>Label</span>
+                    <input
+                      type="text"
+                      value={selectedNode.label}
+                      onChange={(e) => updateSelectedNode({ label: e.target.value })}
+                    />
+                  </label>
 
-          <div className={styles.buttonRow}>
-            <button type="button" onClick={addNode}>
-              Add Node
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setConnectMode((prev) => !prev);
-                setPendingConnectionFrom(null);
-                setSelectedEdgeId(null);
-              }}
-            >
-              {connectMode ? "Exit Connect Mode" : "Connect Nodes"}
-            </button>
-          </div>
+                  <label className={styles.field}>
+                    <span>Quantity</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedNode.quantity}
+                      onChange={(e) => {
+                        const value = e.target.value;
 
-          <div className={styles.selectedPanel}>
-            <h3>Selected Node</h3>
+                        if (value === "") {
+                          updateSelectedNode({ quantity: "" });
+                          return;
+                        }
 
-            {selectedNode ? (
-              <>
-                <label className={styles.field}>
-                  <span>Label</span>
-                  <input
-                    type="text"
-                    value={selectedNode.label}
-                    onChange={(e) =>
-                      updateSelectedNode({ label: e.target.value })
-                    }
-                  />
-                </label>
+                        if (/^\d+$/.test(value)) {
+                          updateSelectedNode({ quantity: value });
+                        }
+                      }}
+                    />
+                  </label>
 
-                <label className={styles.field}>
-                  <span>Quantity</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={selectedNode.quantity}
-                    onChange={(e) => {
-                      const value = e.target.value;
+                  <button
+                    type="button"
+                    className={styles.deleteButton}
+                    onClick={deleteSelectedNode}
+                  >
+                    Delete Selected Node
+                  </button>
+                </>
+              ) : (
+                <p>No node selected.</p>
+              )}
+            </div>
 
-                      if (value === "") {
-                        updateSelectedNode({ quantity: "" });
-                        return;
-                      }
-
-                      if (/^\d+$/.test(value)) {
-                        updateSelectedNode({ quantity: value });
-                      }
-                    }}
-                  />
-                </label>
-
+            <div className={styles.card}>
+              <h3>Selected Connection</h3>
+              {selectedEdgeId ? (
                 <button
                   type="button"
                   className={styles.deleteButton}
-                  onClick={deleteSelectedNode}
+                  onClick={deleteSelectedEdge}
                 >
-                  Delete Selected Node
+                  Delete Selected Connection
                 </button>
-              </>
-            ) : (
-              <p>No node selected.</p>
-            )}
-          </div>
+              ) : (
+                <p>No connection selected.</p>
+              )}
+            </div>
 
-          <div className={styles.selectedPanel}>
-            <h3>Selected Connection</h3>
-            {selectedEdgeId ? (
-              <button
-                type="button"
-                className={styles.deleteButton}
-                onClick={deleteSelectedEdge}
-              >
-                Delete Selected Connection
-              </button>
-            ) : (
-              <p>No connection selected.</p>
-            )}
-          </div>
+            <div className={styles.card}>
+              <h3>Derived Structure</h3>
+              <p>Start nodes: {inputs.length}</p>
+              <p>End nodes: {outputs.length}</p>
+              <p>Total nodes: {nodes.length}</p>
+              <p>Total connections: {edges.length}</p>
+              {connectMode ? (
+                <p>
+                  {pendingConnectionFrom
+                    ? "Choose destination node"
+                    : "Choose source node"}
+                </p>
+              ) : null}
+            </div>
 
-          <div className={styles.metaPanel}>
-            <h3>Derived Graph Roles</h3>
-            <p>Start nodes (inputs): {inputs.length}</p>
-            <p>End nodes (outputs): {outputs.length}</p>
-            <p>Total nodes: {nodes.length}</p>
-            <p>Total connections: {edges.length}</p>
-            {connectMode ? (
-              <p>
-                Connect mode active
-                {pendingConnectionFrom ? " — choose destination node" : " — choose source node"}
-              </p>
-            ) : null}
-          </div>
+            <button type="submit" className={styles.saveButton} disabled={saving}>
+              {saving ? "Saving..." : formulaId ? "Save Formula" : "Create Formula"}
+            </button>
 
-          <button type="submit" disabled={saving}>
-            {saving ? "Saving..." : formulaId ? "Save Formula" : "Create Formula"}
-          </button>
-
-          {saveError ? <p className={styles.error}>{saveError}</p> : null}
-          {saveSuccess ? <p className={styles.success}>{saveSuccess}</p> : null}
-        </form>
+            {saveError ? <p className={styles.error}>{saveError}</p> : null}
+          </form>
+        </section>
 
         <section className={styles.canvasPanel}>
           <div className={styles.canvasHeader}>
             <h2>Canvas</h2>
-            <p>
-              Drag nodes to arrange them. Use connect mode to create directed links.
-            </p>
+            <p>Arrange nodes and create connections like the example site.</p>
           </div>
 
           <div ref={canvasRef} className={styles.canvas}>
@@ -749,9 +697,9 @@ function BuilderInner() {
               <div
                 key={node.id}
                 className={`${styles.node} ${
-                  selectedNodeId === node.id ? styles.selected : ""
+                  selectedNodeId === node.id ? styles.nodeSelected : ""
                 } ${
-                  pendingConnectionFrom === node.id ? styles.pendingConnection : ""
+                  pendingConnectionFrom === node.id ? styles.nodePending : ""
                 }`}
                 style={{
                   left: `${node.x}px`,
@@ -767,7 +715,7 @@ function BuilderInner() {
 
             {nodes.length === 0 ? (
               <div className={styles.emptyCanvas}>
-                Add nodes, move them around, and connect them to build a formula.
+                Add nodes, drag them into place, and connect them.
               </div>
             ) : null}
           </div>

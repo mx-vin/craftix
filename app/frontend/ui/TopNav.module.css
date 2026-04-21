@@ -1,47 +1,55 @@
 .header {
-  background: var(--panel-light);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.inner {
-  max-width: 1500px;
-  margin: 0 auto;
-  height: 72px;
-  padding: 0 24px;
+  height: 78px;
+  background: #fceedb;
+  color: #544137;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(84, 65, 55, 0.18);
 }
 
-.logo {
+.brand {
   font-size: 2rem;
   font-style: italic;
   font-weight: 700;
-  color: var(--text-dark);
+  letter-spacing: 0.02em;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .link,
-.active {
-  padding: 14px 22px;
-  border-radius: 14px;
-  color: var(--text-dark);
-  font-size: 1.05rem;
-}
-
-.active {
-  background: var(--accent-pink);
-}
-
-.settings {
+.logout {
   border: 0;
   background: transparent;
-  color: var(--text-dark);
-  font-size: 1.75rem;
+  color: #544137;
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.active {
+  background: #f6afc4;
+}
+
+.logout {
+  background: #544137;
+  color: #fceedb;
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: auto;
+    padding: 16px 20px;
+    align-items: flex-start;
+    gap: 16px;
+    flex-direction: column;
+  }
 }

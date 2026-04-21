@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import TopNav from "../../ui/TopNav";
+import styles from "./formulas.module.css";
 
 type StoredUser = {
   id: string;
@@ -22,14 +24,28 @@ type Formula = {
   data: {
     inputs?: { item: string; quantity?: number }[];
     outputs?: { item: string; quantity?: number }[];
-    nodes?: unknown[];
-    edges?: unknown[];
+    nodes?: FormulaNode[];
+    edges?: FormulaEdge[];
     [key: string]: any;
   };
   created_at?: string;
   updated_at?: string;
   createdAt?: string;
   updatedAt?: string;
+};
+
+type FormulaNode = {
+  id: string;
+  label: string;
+  quantity?: string | number;
+  x: number;
+  y: number;
+};
+
+type FormulaEdge = {
+  id: string;
+  from: string;
+  to: string;
 };
 
 type GetAllFormulasResponse = {
@@ -47,6 +63,12 @@ type CalculationResult = {
   message?: string;
 };
 
+type FolderGroup = {
+  key: string;
+  label: string;
+  count: number;
+};
+
 export default function FormulasPage() {
   const router = useRouter();
 
@@ -56,6 +78,9 @@ export default function FormulasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+
+  const [selectedFormulaId, setSelectedFormulaId] = useState<string>("");
+  const [selectedFolder, setSelectedFolder] = useState<string>("all");
 
   const [overrideNames, setOverrideNames] = useState<Record<string, string>>({});
   const [overrideValues, setOverrideValues] = useState<Record<string, string>>({});
@@ -93,15 +118,12 @@ export default function FormulasPage() {
     setError("");
 
     try {
-      const res = await fetch(
-        `/backend/api/formulas/getAllFormulas/${userId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${bearerToken}`,
-          },
-        }
-      );
+      const res = await fetch(`/backend/api/formulas/getAllFormulas/${userId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+      });
 
       const data: GetAllFormulasResponse = await res.json();
 
@@ -111,7 +133,12 @@ export default function FormulasPage() {
         return;
       }
 
-      setFormulas(data.formulas || []);
+      const loaded = data.formulas || [];
+      setFormulas(loaded);
+
+      if (loaded.length > 0 && !selectedFormulaId) {
+        setSelectedFormulaId(loaded[0].id);
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to load formulas");
       setFormulas([]);
@@ -126,15 +153,12 @@ export default function FormulasPage() {
     setDeleteError("");
 
     try {
-      const res = await fetch(
-        `/backend/api/formulas/deleteFormula/${formulaId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`/backend/api/formulas/deleteFormula/${formulaId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const text = await res.text();
       let data: any = null;
@@ -151,6 +175,9 @@ export default function FormulasPage() {
       }
 
       await loadFormulas(user.id, token);
+      if (selectedFormulaId === formulaId) {
+        setSelectedFormulaId("");
+      }
     } catch (err: any) {
       setDeleteError(err?.message || "Failed to delete formula");
     }
@@ -178,21 +205,16 @@ export default function FormulasPage() {
           return;
         }
 
-        inputs = {
-          [overrideName]: parsedValue,
-        };
+        inputs = { [overrideName]: parsedValue };
       }
 
-      const res = await fetch(
-        `/backend/api/formulas/calculateFormula/${formulaId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ inputs }),
-        }
-      );
+      const res = await fetch(`/backend/api/formulas/calculateFormula/${formulaId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs }),
+      });
 
       const text = await res.text();
       let data: CalculationResult | null = null;
@@ -225,106 +247,218 @@ export default function FormulasPage() {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/frontend/portal/login");
+  const folderGroups = useMemo<FolderGroup[]>(() => {
+    const map = new Map<string, FolderGroup>();
+
+    for (const formula of formulas) {
+      const folderKey = formula.folderId || formula.folder_id || "ungrouped";
+
+      if (!map.has(folderKey)) {
+        map.set(folderKey, {
+          key: folderKey,
+          label: folderKey === "ungrouped" ? "Ungrouped" : `Folder ${folderKey.slice(0, 6)}`,
+          count: 0,
+        });
+      }
+
+      map.get(folderKey)!.count += 1;
+    }
+
+    return [
+      { key: "all", label: "All Formulas", count: formulas.length },
+      ...Array.from(map.values()),
+    ];
+  }, [formulas]);
+
+  const filteredFormulas = useMemo(() => {
+    if (selectedFolder === "all") return formulas;
+    return formulas.filter(
+      (formula) => (formula.folderId || formula.folder_id || "ungrouped") === selectedFolder
+    );
+  }, [formulas, selectedFolder]);
+
+  useEffect(() => {
+    if (filteredFormulas.length > 0) {
+      const exists = filteredFormulas.some((f) => f.id === selectedFormulaId);
+      if (!exists) {
+        setSelectedFormulaId(filteredFormulas[0].id);
+      }
+    }
+  }, [filteredFormulas, selectedFormulaId]);
+
+  const selectedFormula =
+    filteredFormulas.find((formula) => formula.id === selectedFormulaId) || null;
+
+  function getNodeCenter(nodeId: string) {
+    const node = selectedFormula?.data?.nodes?.find((n) => n.id === nodeId);
+    if (!node) return null;
+    return { x: node.x + 64, y: node.y + 36 };
   }
 
-  const formulaCountText = useMemo(() => {
-    if (loading) return "Loading...";
-    if (formulas.length === 1) return "1 formula";
-    return `${formulas.length} formulas`;
-  }, [loading, formulas.length]);
-
   if (!user) {
-    return <main style={{ padding: "24px" }}>Loading user...</main>;
+    return <main className={styles.page}>Loading user...</main>;
   }
 
   return (
-    <main style={{ padding: "24px" }}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "16px",
-          flexWrap: "wrap",
-          marginBottom: "24px",
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0 }}>Formulas Dashboard</h1>
-          <p style={{ margin: "8px 0 0" }}>
-            Signed in as <strong>{user.username}</strong>
-          </p>
-          <p style={{ margin: "4px 0 0" }}>{formulaCountText}</p>
-        </div>
+    <main className={styles.page}>
+      <TopNav />
 
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/frontend">Home</Link>
-          <Link href="/frontend/portal/builder">New Formula</Link>
-          <button type="button" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <section>
-        <h2>Your Formulas</h2>
-
-        {error ? <p style={{ color: "red" }}>{error}</p> : null}
-        {deleteError ? <p style={{ color: "red" }}>{deleteError}</p> : null}
-
-        {loading ? (
-          <p>Loading formulas...</p>
-        ) : formulas.length === 0 ? (
-          <div>
-            <p>No formulas found yet.</p>
-            <Link href="/frontend/portal/builder">Create your first formula</Link>
+      <div className={styles.shell}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>
+            <h2 className={styles.sidebarTitle}>Formulas</h2>
+            <Link href="/frontend/portal/builder" className={styles.createButton}>
+              + New Formula
+            </Link>
           </div>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gap: "16px",
-              maxWidth: "1000px",
-            }}
-          >
-            {formulas.map((formula) => {
-              const createdDisplay = formula.createdAt || formula.created_at;
-              const updatedDisplay = formula.updatedAt || formula.updated_at;
 
-              const inputList = formula.data?.inputs || [];
-              const outputList = formula.data?.outputs || [];
-              const result = calculationResults[formula.id];
-
-              return (
-                <article
-                  key={formula.id}
-                  style={{
-                    border: "1px solid #ccc",
-                    padding: "16px",
-                  }}
+          <div className={styles.folderSection}>
+            <p className={styles.sectionLabel}>Folders</p>
+            <div className={styles.folderList}>
+              {folderGroups.map((folder) => (
+                <button
+                  key={folder.key}
+                  type="button"
+                  className={
+                    selectedFolder === folder.key
+                      ? `${styles.folderButton} ${styles.folderButtonActive}`
+                      : styles.folderButton
+                  }
+                  onClick={() => setSelectedFolder(folder.key)}
                 >
-                  <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
-                    {formula.name}
-                  </h3>
+                  <span>{folder.label}</span>
+                  <span className={styles.folderCount}>{folder.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-                  <p style={{ marginTop: 0 }}>
-                    {formula.description || "No description"}
+          <div className={styles.formulaSection}>
+            <p className={styles.sectionLabel}>Saved Formulas</p>
+
+            {loading ? (
+              <p>Loading formulas...</p>
+            ) : filteredFormulas.length === 0 ? (
+              <p>No formulas found.</p>
+            ) : (
+              <div className={styles.formulaList}>
+                {filteredFormulas.map((formula) => (
+                  <button
+                    key={formula.id}
+                    type="button"
+                    className={
+                      selectedFormulaId === formula.id
+                        ? `${styles.formulaCard} ${styles.formulaCardActive}`
+                        : styles.formulaCard
+                    }
+                    onClick={() => setSelectedFormulaId(formula.id)}
+                  >
+                    <strong>{formula.name}</strong>
+                    <span>{formula.description || "No description"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
+
+        <section className={styles.mainPanel}>
+          {error ? <p className={styles.error}>{error}</p> : null}
+          {deleteError ? <p className={styles.error}>{deleteError}</p> : null}
+
+          {!selectedFormula ? (
+            <div className={styles.emptyState}>
+              <h2>No formula selected</h2>
+              <p>Create one to get started.</p>
+              <Link href="/frontend/portal/builder" className={styles.createButton}>
+                Create Formula
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className={styles.panelHeader}>
+                <div>
+                  <h1 className={styles.mainTitle}>{selectedFormula.name}</h1>
+                  <p className={styles.mainSubtitle}>
+                    {selectedFormula.description || "No description"}
                   </p>
+                </div>
 
-                  <p style={{ margin: "8px 0" }}>
-                    <strong>ID:</strong> {formula.id}
-                  </p>
+                <div className={styles.actionRow}>
+                  <Link
+                    href={`/frontend/portal/builder?formulaId=${selectedFormula.id}`}
+                    className={styles.editButton}
+                  >
+                    Edit Formula
+                  </Link>
+                  <button
+                    type="button"
+                    className={styles.deleteButton}
+                    onClick={() => handleDeleteFormula(selectedFormula.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
 
-                  <div style={{ margin: "12px 0" }}>
-                    <strong>Derived Inputs:</strong>
-                    {inputList.length > 0 ? (
+              <div className={styles.workspace}>
+                <div className={styles.graphPanel}>
+                  <div className={styles.graphHeader}>
+                    <h3>Formula Graph</h3>
+                    <p>Visual preview of the saved formula structure.</p>
+                  </div>
+
+                  <div className={styles.graphCanvas}>
+                    <svg className={styles.edgeLayer}>
+                      {(selectedFormula.data?.edges || []).map((edge) => {
+                        const from = getNodeCenter(edge.from);
+                        const to = getNodeCenter(edge.to);
+                        if (!from || !to) return null;
+
+                        return (
+                          <line
+                            key={edge.id}
+                            x1={from.x}
+                            y1={from.y}
+                            x2={to.x}
+                            y2={to.y}
+                            className={styles.edge}
+                          />
+                        );
+                      })}
+                    </svg>
+
+                    {(selectedFormula.data?.nodes || []).length > 0 ? (
+                      (selectedFormula.data?.nodes || []).map((node) => (
+                        <div
+                          key={node.id}
+                          className={styles.graphNode}
+                          style={{
+                            left: `${node.x}px`,
+                            top: `${node.y}px`,
+                          }}
+                        >
+                          <div className={styles.graphNodeLabel}>{node.label}</div>
+                          <div className={styles.graphNodeQty}>
+                            x{node.quantity ?? ""}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.graphFallback}>
+                        No saved graph nodes yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.sideCards}>
+                  <div className={styles.infoCard}>
+                    <h3>Derived Inputs</h3>
+                    {(selectedFormula.data?.inputs || []).length > 0 ? (
                       <ul>
-                        {inputList.map((input, index) => (
-                          <li key={`input-${formula.id}-${index}`}>
+                        {(selectedFormula.data?.inputs || []).map((input, index) => (
+                          <li key={`input-${index}`}>
                             {input.item} x{input.quantity ?? 1}
                           </li>
                         ))}
@@ -334,12 +468,12 @@ export default function FormulasPage() {
                     )}
                   </div>
 
-                  <div style={{ margin: "12px 0" }}>
-                    <strong>Derived Outputs:</strong>
-                    {outputList.length > 0 ? (
+                  <div className={styles.infoCard}>
+                    <h3>Derived Outputs</h3>
+                    {(selectedFormula.data?.outputs || []).length > 0 ? (
                       <ul>
-                        {outputList.map((output, index) => (
-                          <li key={`output-${formula.id}-${index}`}>
+                        {(selectedFormula.data?.outputs || []).map((output, index) => (
+                          <li key={`output-${index}`}>
                             {output.item} x{output.quantity ?? 1}
                           </li>
                         ))}
@@ -349,31 +483,18 @@ export default function FormulasPage() {
                     )}
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: "16px",
-                      padding: "12px",
-                      border: "1px solid #ddd",
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>Calculate</h4>
+                  <div className={styles.infoCard}>
+                    <h3>Calculate Formula</h3>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                        marginBottom: "12px",
-                      }}
-                    >
+                    <div className={styles.calcFields}>
                       <input
                         type="text"
                         placeholder="Override item name"
-                        value={overrideNames[formula.id] || ""}
+                        value={overrideNames[selectedFormula.id] || ""}
                         onChange={(e) =>
                           setOverrideNames((prev) => ({
                             ...prev,
-                            [formula.id]: e.target.value,
+                            [selectedFormula.id]: e.target.value,
                           }))
                         }
                       />
@@ -382,95 +503,68 @@ export default function FormulasPage() {
                         type="number"
                         min="0"
                         placeholder="Override value"
-                        value={overrideValues[formula.id] || ""}
+                        value={overrideValues[selectedFormula.id] || ""}
                         onChange={(e) =>
                           setOverrideValues((prev) => ({
                             ...prev,
-                            [formula.id]: e.target.value,
+                            [selectedFormula.id]: e.target.value,
                           }))
                         }
                       />
 
                       <button
                         type="button"
-                        onClick={() => handleCalculate(formula.id)}
-                        disabled={!!calculating[formula.id]}
+                        className={styles.calcButton}
+                        onClick={() => handleCalculate(selectedFormula.id)}
+                        disabled={!!calculating[selectedFormula.id]}
                       >
-                        {calculating[formula.id] ? "Calculating..." : "Calculate"}
+                        {calculating[selectedFormula.id] ? "Calculating..." : "Calculate"}
                       </button>
                     </div>
 
-                    {calculationErrors[formula.id] ? (
-                      <p style={{ color: "red" }}>{calculationErrors[formula.id]}</p>
+                    {calculationErrors[selectedFormula.id] ? (
+                      <p className={styles.error}>
+                        {calculationErrors[selectedFormula.id]}
+                      </p>
                     ) : null}
 
-                    {result?.used || result?.results ? (
-                      <div>
-                        <div style={{ marginTop: "8px" }}>
-                          <strong>Used:</strong>
-                          {result.used ? (
-                            <ul>
-                              {Object.entries(result.used).map(([key, value]) => (
-                                <li key={`used-${formula.id}-${key}`}>
-                                  {key}: {value}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p>No used values</p>
-                          )}
+                    {calculationResults[selectedFormula.id]?.used ||
+                    calculationResults[selectedFormula.id]?.results ? (
+                      <div className={styles.calcResults}>
+                        <div>
+                          <strong>Used</strong>
+                          <ul>
+                            {Object.entries(
+                              calculationResults[selectedFormula.id]?.used || {}
+                            ).map(([key, value]) => (
+                              <li key={`used-${key}`}>
+                                {key}: {value}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
 
-                        <div style={{ marginTop: "8px" }}>
-                          <strong>Results:</strong>
-                          {result.results ? (
-                            <ul>
-                              {Object.entries(result.results).map(([key, value]) => (
-                                <li key={`result-${formula.id}-${key}`}>
-                                  {key}: {value}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p>No results</p>
-                          )}
+                        <div>
+                          <strong>Results</strong>
+                          <ul>
+                            {Object.entries(
+                              calculationResults[selectedFormula.id]?.results || {}
+                            ).map(([key, value]) => (
+                              <li key={`result-${key}`}>
+                                {key}: {value}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     ) : null}
                   </div>
-
-                  <p style={{ margin: "8px 0" }}>
-                    <strong>Created:</strong>{" "}
-                    {createdDisplay
-                      ? new Date(createdDisplay).toLocaleString()
-                      : "Unknown"}
-                  </p>
-
-                  <p style={{ margin: "8px 0" }}>
-                    <strong>Last updated:</strong>{" "}
-                    {updatedDisplay
-                      ? new Date(updatedDisplay).toLocaleString()
-                      : "Unknown"}
-                  </p>
-
-                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <Link href={`/frontend/portal/builder?formulaId=${formula.id}`}>
-                      Edit in Builder
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteFormula(formula.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
