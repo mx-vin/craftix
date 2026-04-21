@@ -39,6 +39,14 @@ type GetAllFormulasResponse = {
   detail?: string;
 };
 
+type CalculationResult = {
+  success?: boolean;
+  used?: Record<string, number>;
+  results?: Record<string, number>;
+  error?: string;
+  message?: string;
+};
+
 export default function FormulasPage() {
   const router = useRouter();
 
@@ -48,6 +56,12 @@ export default function FormulasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+
+  const [overrideNames, setOverrideNames] = useState<Record<string, string>>({});
+  const [overrideValues, setOverrideValues] = useState<Record<string, string>>({});
+  const [calculating, setCalculating] = useState<Record<string, boolean>>({});
+  const [calculationErrors, setCalculationErrors] = useState<Record<string, string>>({});
+  const [calculationResults, setCalculationResults] = useState<Record<string, CalculationResult>>({});
 
   useEffect(() => {
     const rawToken = localStorage.getItem("token");
@@ -142,6 +156,75 @@ export default function FormulasPage() {
     }
   }
 
+  async function handleCalculate(formulaId: string) {
+    const overrideName = (overrideNames[formulaId] || "").trim();
+    const overrideValueRaw = (overrideValues[formulaId] || "").trim();
+
+    setCalculationErrors((prev) => ({ ...prev, [formulaId]: "" }));
+    setCalculating((prev) => ({ ...prev, [formulaId]: true }));
+
+    try {
+      let inputs: Record<string, number> = {};
+
+      if (overrideName && overrideValueRaw !== "") {
+        const parsedValue = Number(overrideValueRaw);
+
+        if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+          setCalculationErrors((prev) => ({
+            ...prev,
+            [formulaId]: "Override value must be a valid non-negative number",
+          }));
+          setCalculating((prev) => ({ ...prev, [formulaId]: false }));
+          return;
+        }
+
+        inputs = {
+          [overrideName]: parsedValue,
+        };
+      }
+
+      const res = await fetch(
+        `/backend/api/formulas/calculateFormula/${formulaId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ inputs }),
+        }
+      );
+
+      const text = await res.text();
+      let data: CalculationResult | null = null;
+
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = { error: text || "Invalid server response" };
+      }
+
+      if (!res.ok) {
+        setCalculationErrors((prev) => ({
+          ...prev,
+          [formulaId]: data?.error || data?.message || "Failed to calculate formula",
+        }));
+        return;
+      }
+
+      setCalculationResults((prev) => ({
+        ...prev,
+        [formulaId]: data || {},
+      }));
+    } catch (err: any) {
+      setCalculationErrors((prev) => ({
+        ...prev,
+        [formulaId]: err?.message || "Failed to calculate formula",
+      }));
+    } finally {
+      setCalculating((prev) => ({ ...prev, [formulaId]: false }));
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -205,7 +288,7 @@ export default function FormulasPage() {
             style={{
               display: "grid",
               gap: "16px",
-              maxWidth: "900px",
+              maxWidth: "1000px",
             }}
           >
             {formulas.map((formula) => {
@@ -214,6 +297,7 @@ export default function FormulasPage() {
 
               const inputList = formula.data?.inputs || [];
               const outputList = formula.data?.outputs || [];
+              const result = calculationResults[formula.id];
 
               return (
                 <article
@@ -263,6 +347,96 @@ export default function FormulasPage() {
                     ) : (
                       <p>No derived outputs</p>
                     )}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "12px",
+                      border: "1px solid #ddd",
+                    }}
+                  >
+                    <h4 style={{ marginTop: 0 }}>Calculate</h4>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        flexWrap: "wrap",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Override item name"
+                        value={overrideNames[formula.id] || ""}
+                        onChange={(e) =>
+                          setOverrideNames((prev) => ({
+                            ...prev,
+                            [formula.id]: e.target.value,
+                          }))
+                        }
+                      />
+
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Override value"
+                        value={overrideValues[formula.id] || ""}
+                        onChange={(e) =>
+                          setOverrideValues((prev) => ({
+                            ...prev,
+                            [formula.id]: e.target.value,
+                          }))
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleCalculate(formula.id)}
+                        disabled={!!calculating[formula.id]}
+                      >
+                        {calculating[formula.id] ? "Calculating..." : "Calculate"}
+                      </button>
+                    </div>
+
+                    {calculationErrors[formula.id] ? (
+                      <p style={{ color: "red" }}>{calculationErrors[formula.id]}</p>
+                    ) : null}
+
+                    {result?.used || result?.results ? (
+                      <div>
+                        <div style={{ marginTop: "8px" }}>
+                          <strong>Used:</strong>
+                          {result.used ? (
+                            <ul>
+                              {Object.entries(result.used).map(([key, value]) => (
+                                <li key={`used-${formula.id}-${key}`}>
+                                  {key}: {value}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>No used values</p>
+                          )}
+                        </div>
+
+                        <div style={{ marginTop: "8px" }}>
+                          <strong>Results:</strong>
+                          {result.results ? (
+                            <ul>
+                              {Object.entries(result.results).map(([key, value]) => (
+                                <li key={`result-${formula.id}-${key}`}>
+                                  {key}: {value}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>No results</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <p style={{ margin: "8px 0" }}>

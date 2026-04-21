@@ -23,7 +23,7 @@ type FormulaVariable = {
 type BuilderNode = {
   id: string;
   label: string;
-  quantity: number;
+  quantity: string;
   x: number;
   y: number;
 };
@@ -78,6 +78,11 @@ function makeEdgeId() {
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max));
+}
+
+function toPositiveNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 function BuilderInner() {
@@ -150,8 +155,16 @@ function BuilderInner() {
       if (!dragState || !canvasRef.current) return;
 
       const rect = canvasRef.current.getBoundingClientRect();
-      const nextX = clamp(e.clientX - rect.left - dragState.offsetX, 0, rect.width - 150);
-      const nextY = clamp(e.clientY - rect.top - dragState.offsetY, 0, rect.height - 84);
+      const nextX = clamp(
+        e.clientX - rect.left - dragState.offsetX,
+        0,
+        rect.width - 150
+      );
+      const nextY = clamp(
+        e.clientY - rect.top - dragState.offsetY,
+        0,
+        rect.height - 84
+      );
 
       setNodes((prev) =>
         prev.map((node) =>
@@ -220,7 +233,7 @@ function BuilderInner() {
         loadedNodes = loadedFormula.data.nodes.map((node, index) => ({
           id: node.id || makeNodeId(),
           label: node.label,
-          quantity: node.quantity ?? 1,
+          quantity: String(node.quantity ?? 1),
           x: node.x ?? 80 + index * 40,
           y: node.y ?? 80 + index * 40,
         }));
@@ -236,7 +249,7 @@ function BuilderInner() {
         loadedNodes = loadedVariables.map((v, index) => ({
           id: makeNodeId(),
           label: v.name,
-          quantity: v.base_value ?? 1,
+          quantity: String(v.base_value ?? 1),
           x: 100 + (index % 3) * 180,
           y: 80 + Math.floor(index / 3) * 120,
         }));
@@ -261,7 +274,7 @@ function BuilderInner() {
     const newNode: BuilderNode = {
       id: makeNodeId(),
       label: `Node ${nodes.length + 1}`,
-      quantity: 1,
+      quantity: "1",
       x: 120 + (nodes.length % 3) * 160,
       y: 100 + Math.floor(nodes.length / 3) * 100,
     };
@@ -283,6 +296,7 @@ function BuilderInner() {
     setEdges(nextEdges);
     setSelectedNodeId(nextNodes[0]?.id ?? null);
     setSelectedEdgeId(null);
+
     if (pendingConnectionFrom === selectedNodeId) {
       setPendingConnectionFrom(null);
     }
@@ -386,11 +400,15 @@ function BuilderInner() {
     }
 
     const inputs = nodes.filter(
-      (node) => (incomingCount.get(node.id) || 0) === 0 && (outgoingCount.get(node.id) || 0) > 0
+      (node) =>
+        (incomingCount.get(node.id) || 0) === 0 &&
+        (outgoingCount.get(node.id) || 0) > 0
     );
 
     const outputs = nodes.filter(
-      (node) => (incomingCount.get(node.id) || 0) > 0 && (outgoingCount.get(node.id) || 0) === 0
+      (node) =>
+        (incomingCount.get(node.id) || 0) > 0 &&
+        (outgoingCount.get(node.id) || 0) === 0
     );
 
     return { inputs, outputs };
@@ -437,11 +455,11 @@ function BuilderInner() {
         ...(formula?.data || {}),
         inputs: inputs.map((node) => ({
           item: node.label.trim(),
-          quantity: Number(node.quantity) || 1,
+          quantity: toPositiveNumber(node.quantity),
         })),
         outputs: outputs.map((node) => ({
           item: node.label.trim(),
-          quantity: Number(node.quantity) || 1,
+          quantity: toPositiveNumber(node.quantity),
         })),
         nodes,
         edges,
@@ -457,12 +475,12 @@ function BuilderInner() {
             ...inputs.map((node) => ({
               name: node.label.trim(),
               type: "input",
-              base_value: Number(node.quantity) || 1,
+              base_value: toPositiveNumber(node.quantity),
             })),
             ...outputs.map((node) => ({
               name: node.label.trim(),
               type: "output",
-              base_value: Number(node.quantity) || 1,
+              base_value: toPositiveNumber(node.quantity),
             })),
           ],
         };
@@ -628,11 +646,18 @@ function BuilderInner() {
                     type="number"
                     min="1"
                     value={selectedNode.quantity}
-                    onChange={(e) =>
-                      updateSelectedNode({
-                        quantity: Number(e.target.value) || 1,
-                      })
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === "") {
+                        updateSelectedNode({ quantity: "" });
+                        return;
+                      }
+
+                      if (/^\d+$/.test(value)) {
+                        updateSelectedNode({ quantity: value });
+                      }
+                    }}
                   />
                 </label>
 
@@ -736,7 +761,7 @@ function BuilderInner() {
                 onClick={() => handleNodeClick(node.id)}
               >
                 <div className={styles.nodeLabel}>{node.label}</div>
-                <div className={styles.nodeQty}>x{node.quantity}</div>
+                <div className={styles.nodeQty}>x{node.quantity || ""}</div>
               </div>
             ))}
 
