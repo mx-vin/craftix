@@ -85,6 +85,16 @@ type PanState = {
   originY: number;
 } | null;
 
+const WORLD_WIDTH = 2800;
+const WORLD_HEIGHT = 1800;
+const MIN_ZOOM = 0.35;
+const MAX_ZOOM = 1.4;
+const ZOOM_STEP = 0.1;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(value, max));
+}
+
 export default function FormulasPage() {
   const router = useRouter();
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -108,6 +118,7 @@ export default function FormulasPage() {
 
   const [canvasOffset, setCanvasOffset] = useState<CanvasOffset>({ x: 0, y: 0 });
   const [panState, setPanState] = useState<PanState>(null);
+  const [zoom, setZoom] = useState(0.6);
 
   useEffect(() => {
     const rawToken = localStorage.getItem("token");
@@ -138,6 +149,7 @@ export default function FormulasPage() {
     setSelectedCalcNodeId(null);
     setSelectedOverrideValue("");
     setCanvasOffset({ x: 0, y: 0 });
+    setZoom(0.6);
   }, [selectedFormulaId]);
 
   useEffect(() => {
@@ -379,6 +391,19 @@ export default function FormulasPage() {
     });
   }
 
+  function zoomIn() {
+    setZoom((prev) => clamp(Number((prev + ZOOM_STEP).toFixed(2)), MIN_ZOOM, MAX_ZOOM));
+  }
+
+  function zoomOut() {
+    setZoom((prev) => clamp(Number((prev - ZOOM_STEP).toFixed(2)), MIN_ZOOM, MAX_ZOOM));
+  }
+
+  function resetView() {
+    setCanvasOffset({ x: 0, y: 0 });
+    setZoom(0.6);
+  }
+
   if (!user) {
     return <main className={styles.page}>Loading user...</main>;
   }
@@ -488,8 +513,23 @@ export default function FormulasPage() {
               <div className={styles.workspace}>
                 <div className={styles.graphPanel}>
                   <div className={styles.graphHeader}>
-                    <h3>Formula Graph</h3>
-                    <p>Click a node to select it for override. Drag empty space to pan.</p>
+                    <div>
+                      <h3>Formula Graph</h3>
+                      <p>Click a node to select it for override. Drag empty space to pan.</p>
+                    </div>
+
+                    <div className={styles.zoomControls}>
+                      <button type="button" onClick={zoomOut}>
+                        -
+                      </button>
+                      <span>{Math.round(zoom * 100)}%</span>
+                      <button type="button" onClick={zoomIn}>
+                        +
+                      </button>
+                      <button type="button" onClick={resetView}>
+                        Reset
+                      </button>
+                    </div>
                   </div>
 
                   <div
@@ -500,10 +540,10 @@ export default function FormulasPage() {
                     <div
                       className={styles.graphWorld}
                       style={{
-                        transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`,
+                        transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`,
                       }}
                     >
-                      <svg className={styles.edgeLayer}>
+                      <svg className={styles.edgeLayer} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`}>
                         {(selectedFormula.data?.edges || []).map((edge) => {
                           const from = getNodeCenter(edge.from);
                           const to = getNodeCenter(edge.to);
@@ -569,9 +609,13 @@ export default function FormulasPage() {
                 <div className={styles.sideCards}>
                   <div className={styles.infoCard}>
                     <h3>Derived Source Nodes</h3>
-                    {(calculationResults[selectedFormula.id]?.sourceNodes || selectedFormula.data?.inputs?.map(i => i.item) || []).length > 0 ? (
+                    {(calculationResults[selectedFormula.id]?.sourceNodes ||
+                      selectedFormula.data?.inputs?.map((i) => i.item) ||
+                      []).length > 0 ? (
                       <ul>
-                        {(calculationResults[selectedFormula.id]?.sourceNodes || selectedFormula.data?.inputs?.map(i => i.item) || []).map((item, index) => (
+                        {(calculationResults[selectedFormula.id]?.sourceNodes ||
+                          selectedFormula.data?.inputs?.map((i) => i.item) ||
+                          []).map((item, index) => (
                           <li key={`source-${index}`}>{item}</li>
                         ))}
                       </ul>
@@ -582,9 +626,13 @@ export default function FormulasPage() {
 
                   <div className={styles.infoCard}>
                     <h3>Derived Final Outputs</h3>
-                    {(calculationResults[selectedFormula.id]?.sinkNodes || selectedFormula.data?.outputs?.map(o => o.item) || []).length > 0 ? (
+                    {(calculationResults[selectedFormula.id]?.sinkNodes ||
+                      selectedFormula.data?.outputs?.map((o) => o.item) ||
+                      []).length > 0 ? (
                       <ul>
-                        {(calculationResults[selectedFormula.id]?.sinkNodes || selectedFormula.data?.outputs?.map(o => o.item) || []).map((item, index) => (
+                        {(calculationResults[selectedFormula.id]?.sinkNodes ||
+                          selectedFormula.data?.outputs?.map((o) => o.item) ||
+                          []).map((item, index) => (
                           <li key={`sink-${index}`}>{item}</li>
                         ))}
                       </ul>

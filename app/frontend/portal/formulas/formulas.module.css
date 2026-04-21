@@ -172,19 +172,51 @@
   border: 1px solid rgba(84, 65, 55, 0.12);
 }
 
+.graphHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
 .graphHeader h3,
 .infoCard h3 {
   margin: 0 0 8px;
 }
 
 .graphHeader p {
-  margin: 0 0 12px;
+  margin: 0;
   opacity: 0.75;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zoomControls button {
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #544137;
+  color: #fceedb;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.zoomControls span {
+  min-width: 54px;
+  text-align: center;
+  font-weight: 700;
 }
 
 .graphViewport {
   position: relative;
-  min-height: 520px;
+  height: min(60vh, 620px);
+  width: 100%;
   border-radius: 20px;
   background:
     linear-gradient(to right, rgba(84, 65, 55, 0.06) 1px, transparent 1px),
@@ -199,10 +231,13 @@
 }
 
 .graphWorld {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 2800px;
   height: 1800px;
   transform-origin: 0 0;
+  will-change: transform;
 }
 
 .edgeLayer {
@@ -325,5 +360,9 @@
 
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .graphHeader {
+    flex-direction: column;
   }
 }
