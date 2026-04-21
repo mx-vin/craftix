@@ -13,6 +13,20 @@ type StoredUser = {
   is_admin?: boolean;
 };
 
+type FormulaNode = {
+  id: string;
+  label: string;
+  quantity?: string | number;
+  x: number;
+  y: number;
+};
+
+type FormulaEdge = {
+  id: string;
+  from: string;
+  to: string;
+};
+
 type Formula = {
   id: string;
   user_id?: string;
@@ -32,20 +46,6 @@ type Formula = {
   updated_at?: string;
   createdAt?: string;
   updatedAt?: string;
-};
-
-type FormulaNode = {
-  id: string;
-  label: string;
-  quantity?: string | number;
-  x: number;
-  y: number;
-};
-
-type FormulaEdge = {
-  id: string;
-  from: string;
-  to: string;
 };
 
 type GetAllFormulasResponse = {
@@ -82,8 +82,9 @@ export default function FormulasPage() {
   const [selectedFormulaId, setSelectedFormulaId] = useState<string>("");
   const [selectedFolder, setSelectedFolder] = useState<string>("all");
 
-  const [overrideNames, setOverrideNames] = useState<Record<string, string>>({});
-  const [overrideValues, setOverrideValues] = useState<Record<string, string>>({});
+  const [selectedCalcNodeId, setSelectedCalcNodeId] = useState<string | null>(null);
+  const [selectedOverrideValue, setSelectedOverrideValue] = useState<string>("");
+
   const [calculating, setCalculating] = useState<Record<string, boolean>>({});
   const [calculationErrors, setCalculationErrors] = useState<Record<string, string>>({});
   const [calculationResults, setCalculationResults] = useState<Record<string, CalculationResult>>({});
@@ -112,6 +113,11 @@ export default function FormulasPage() {
     if (!user || !token) return;
     void loadFormulas(user.id, token);
   }, [user, token]);
+
+  useEffect(() => {
+    setSelectedCalcNodeId(null);
+    setSelectedOverrideValue("");
+  }, [selectedFormulaId]);
 
   async function loadFormulas(userId: string, bearerToken: string) {
     setLoading(true);
@@ -184,17 +190,26 @@ export default function FormulasPage() {
   }
 
   async function handleCalculate(formulaId: string) {
-    const overrideName = (overrideNames[formulaId] || "").trim();
-    const overrideValueRaw = (overrideValues[formulaId] || "").trim();
-
     setCalculationErrors((prev) => ({ ...prev, [formulaId]: "" }));
     setCalculating((prev) => ({ ...prev, [formulaId]: true }));
 
     try {
       let inputs: Record<string, number> = {};
 
-      if (overrideName && overrideValueRaw !== "") {
-        const parsedValue = Number(overrideValueRaw);
+      if (selectedCalcNodeId && selectedOverrideValue !== "") {
+        const selectedNode =
+          selectedFormula?.data?.nodes?.find((node) => node.id === selectedCalcNodeId) || null;
+
+        if (!selectedNode) {
+          setCalculationErrors((prev) => ({
+            ...prev,
+            [formulaId]: "Select a node first",
+          }));
+          setCalculating((prev) => ({ ...prev, [formulaId]: false }));
+          return;
+        }
+
+        const parsedValue = Number(selectedOverrideValue);
 
         if (!Number.isFinite(parsedValue) || parsedValue < 0) {
           setCalculationErrors((prev) => ({
@@ -205,7 +220,9 @@ export default function FormulasPage() {
           return;
         }
 
-        inputs = { [overrideName]: parsedValue };
+        inputs = {
+          [selectedNode.label]: parsedValue,
+        };
       }
 
       const res = await fetch(`/backend/api/formulas/calculateFormula/${formulaId}`, {
@@ -294,6 +311,9 @@ export default function FormulasPage() {
     if (!node) return null;
     return { x: node.x + 64, y: node.y + 36 };
   }
+
+  const selectedCalcNode =
+    selectedFormula?.data?.nodes?.find((node) => node.id === selectedCalcNodeId) || null;
 
   if (!user) {
     return <main className={styles.page}>Loading user...</main>;
@@ -405,7 +425,7 @@ export default function FormulasPage() {
                 <div className={styles.graphPanel}>
                   <div className={styles.graphHeader}>
                     <h3>Formula Graph</h3>
-                    <p>Visual preview of the saved formula structure.</p>
+                    <p>Click a node to select it for calculation override.</p>
                   </div>
 
                   <div className={styles.graphCanvas}>
@@ -430,19 +450,28 @@ export default function FormulasPage() {
 
                     {(selectedFormula.data?.nodes || []).length > 0 ? (
                       (selectedFormula.data?.nodes || []).map((node) => (
-                        <div
+                        <button
                           key={node.id}
-                          className={styles.graphNode}
+                          type="button"
+                          className={
+                            selectedCalcNodeId === node.id
+                              ? `${styles.graphNode} ${styles.graphNodeSelected}`
+                              : styles.graphNode
+                          }
                           style={{
                             left: `${node.x}px`,
                             top: `${node.y}px`,
+                          }}
+                          onClick={() => {
+                            setSelectedCalcNodeId(node.id);
+                            setSelectedOverrideValue("");
                           }}
                         >
                           <div className={styles.graphNodeLabel}>{node.label}</div>
                           <div className={styles.graphNodeQty}>
                             x{node.quantity ?? ""}
                           </div>
-                        </div>
+                        </button>
                       ))
                     ) : (
                       <div className={styles.graphFallback}>
@@ -486,41 +515,32 @@ export default function FormulasPage() {
                   <div className={styles.infoCard}>
                     <h3>Calculate Formula</h3>
 
-                    <div className={styles.calcFields}>
-                      <input
-                        type="text"
-                        placeholder="Override item name"
-                        value={overrideNames[selectedFormula.id] || ""}
-                        onChange={(e) =>
-                          setOverrideNames((prev) => ({
-                            ...prev,
-                            [selectedFormula.id]: e.target.value,
-                          }))
-                        }
-                      />
+                    {selectedCalcNode ? (
+                      <div className={styles.overridePanel}>
+                        <p className={styles.overrideLabel}>
+                          Selected node: <strong>{selectedCalcNode.label}</strong>
+                        </p>
 
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Override value"
-                        value={overrideValues[selectedFormula.id] || ""}
-                        onChange={(e) =>
-                          setOverrideValues((prev) => ({
-                            ...prev,
-                            [selectedFormula.id]: e.target.value,
-                          }))
-                        }
-                      />
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Override value"
+                          value={selectedOverrideValue}
+                          onChange={(e) => setSelectedOverrideValue(e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <p>Select a graph node to set an override.</p>
+                    )}
 
-                      <button
-                        type="button"
-                        className={styles.calcButton}
-                        onClick={() => handleCalculate(selectedFormula.id)}
-                        disabled={!!calculating[selectedFormula.id]}
-                      >
-                        {calculating[selectedFormula.id] ? "Calculating..." : "Calculate"}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className={styles.calcButton}
+                      onClick={() => handleCalculate(selectedFormula.id)}
+                      disabled={!!calculating[selectedFormula.id]}
+                    >
+                      {calculating[selectedFormula.id] ? "Calculating..." : "Calculate"}
+                    </button>
 
                     {calculationErrors[selectedFormula.id] ? (
                       <p className={styles.error}>

@@ -297,6 +297,12 @@ function BuilderInner() {
     setSelectedEdgeId(null);
   }
 
+  function undoLastConnection() {
+    setEdges((prev) => prev.slice(0, -1));
+    setSelectedEdgeId(null);
+    setPendingConnectionFrom(null);
+  }
+
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || null,
     [nodes, selectedNodeId]
@@ -564,6 +570,7 @@ function BuilderInner() {
               <button type="button" onClick={addNode}>
                 Add Node
               </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -573,6 +580,14 @@ function BuilderInner() {
                 }}
               >
                 {connectMode ? "Exit Connect Mode" : "Connect Nodes"}
+              </button>
+
+              <button
+                type="button"
+                onClick={undoLastConnection}
+                disabled={edges.length === 0}
+              >
+                Undo Last Connection
               </button>
             </div>
 

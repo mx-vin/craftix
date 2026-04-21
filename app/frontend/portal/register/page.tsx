@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import styles from "./register.module.css";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,6 +13,15 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      router.replace("/frontend/portal/formulas");
+    }
+  }, [router]);
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,10 +42,17 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = null;
+
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = { error: text || "Invalid server response" };
+      }
 
       if (!res.ok) {
-        setError(data.error || "Registration failed");
+        setError(data?.error || data?.message || "Registration failed");
         return;
       }
 
@@ -43,64 +60,69 @@ export default function RegisterPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       router.push("/frontend/portal/formulas");
-    } catch (err) {
-      setError("Server error");
+    } catch (err: any) {
+      setError(err?.message || "Server error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main style={{ padding: "24px" }}>
-      <h1>Register</h1>
+    <main className={styles.page}>
+      <section className={styles.card}>
+        <div className={styles.brand}>craftix</div>
 
-      <form
-        onSubmit={handleRegister}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          maxWidth: "360px",
-        }}
-      >
-        <input
-          type="text"
-          placeholder="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+        <h1 className={styles.title}>Create your account</h1>
+        <p className={styles.subtitle}>Start building and organizing formulas.</p>
 
-        <input
-          type="email"
-          placeholder="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <form onSubmit={handleRegister} className={styles.form}>
+          <label className={styles.field}>
+            <span>Username</span>
+            <input
+              type="text"
+              placeholder="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </label>
 
-        <input
-          type="password"
-          placeholder="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          <label className={styles.field}>
+            <span>Email</span>
+            <input
+              type="email"
+              placeholder="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </label>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Create Account"}
-        </button>
-      </form>
+          <label className={styles.field}>
+            <span>Password</span>
+            <input
+              type="password"
+              placeholder="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
 
-      {error ? <p style={{ color: "red" }}>{error}</p> : null}
+          <button type="submit" className={styles.submit} disabled={loading}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+        </form>
 
-      <p>
-        Already have an account? <Link href="/frontend/portal/login">Login</Link>
-      </p>
+        {error ? <p className={styles.error}>{error}</p> : null}
 
-      <p>
-        <Link href="/frontend">Back Home</Link>
-      </p>
+        <p className={styles.footer}>
+          Already have an account?{" "}
+          <Link href="/frontend/portal/login" className={styles.link}>
+            Login
+          </Link>
+        </p>
+      </section>
     </main>
   );
 }

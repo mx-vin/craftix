@@ -1,82 +1,70 @@
 .page {
   min-height: 100vh;
+  background: #8a7866;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #0f172a;
 }
 
 .card {
   width: 100%;
-  max-width: 460px;
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 20px;
+  max-width: 430px;
+  background: #fceedb;
+  color: #544137;
+  border-radius: 28px;
   padding: 32px;
-  color: #f9fafb;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-}
-
-.header {
-  margin-bottom: 24px;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+  box-shadow: 0 12px 24px rgba(84, 65, 55, 0.14);
 }
 
 .brand {
-  margin: 0 0 8px;
-  color: #93c5fd;
+  font-size: 2rem;
+  font-style: italic;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.85rem;
+  margin-bottom: 20px;
 }
 
 .title {
   margin: 0;
   font-size: 2rem;
-  font-weight: 800;
 }
 
 .subtitle {
-  margin: 8px 0 0;
-  color: #9ca3af;
+  margin: 10px 0 24px;
+  opacity: 0.82;
 }
 
 .form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
 .field {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  font-weight: 600;
 }
 
 .field span {
-  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .field input {
-  width: 100%;
+  background: #fff7ef;
+  border: 1px solid rgba(84, 65, 55, 0.15);
+  border-radius: 14px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #374151;
-  background: #0b1220;
-  color: #f9fafb;
-  outline: none;
-}
-
-.field input:focus {
-  border-color: #3b82f6;
+  color: #544137;
 }
 
 .submit {
   margin-top: 4px;
-  padding: 13px 16px;
   border: 0;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: #f6afc4;
+  color: #544137;
   font-weight: 700;
   cursor: pointer;
 }
@@ -87,17 +75,15 @@
 }
 
 .error {
-  margin: 0;
-  color: #fca5a5;
-  font-size: 0.95rem;
+  margin-top: 16px;
+  color: #8b1e48;
 }
 
 .footer {
-  margin: 20px 0 0;
-  color: #9ca3af;
+  margin-top: 20px;
 }
 
-.footer a {
-  color: #93c5fd;
-  text-decoration: none;
+.link {
+  color: #544137;
+  font-weight: 700;
 }

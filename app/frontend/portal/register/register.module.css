@@ -1,0 +1,89 @@
+.page {
+  min-height: 100vh;
+  background: #8a7866;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 430px;
+  background: #fceedb;
+  color: #544137;
+  border-radius: 28px;
+  padding: 32px;
+  border: 1px solid rgba(84, 65, 55, 0.12);
+  box-shadow: 0 12px 24px rgba(84, 65, 55, 0.14);
+}
+
+.brand {
+  font-size: 2rem;
+  font-style: italic;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 10px 0 24px;
+  opacity: 0.82;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field span {
+  font-weight: 700;
+}
+
+.field input {
+  background: #fff7ef;
+  border: 1px solid rgba(84, 65, 55, 0.15);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #544137;
+}
+
+.submit {
+  margin-top: 4px;
+  border: 0;
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: #f6afc4;
+  color: #544137;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 16px;
+  color: #8b1e48;
+}
+
+.footer {
+  margin-top: 20px;
+}
+
+.link {
+  color: #544137;
+  font-weight: 700;
+}
