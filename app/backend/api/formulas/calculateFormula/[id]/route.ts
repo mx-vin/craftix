@@ -93,8 +93,13 @@ function calculateLayeredGraph(
   const ordered = topoSort(nodes, edges);
   const reverseOrdered = [...ordered].reverse();
 
-  const sourceNodes = nodes.filter((node) => (incoming.get(node.id) || []).length === 0);
-  const sinkNodes = nodes.filter((node) => (outgoing.get(node.id) || []).length === 0);
+  const sourceNodes = nodes.filter(
+    (node) => (incoming.get(node.id) || []).length === 0
+  );
+
+  const sinkNodes = nodes.filter(
+    (node) => (outgoing.get(node.id) || []).length === 0
+  );
 
   if (sourceNodes.length === 0 || sinkNodes.length === 0) {
     throw new Error("Formula must have at least one source node and one final output node");
@@ -106,14 +111,12 @@ function calculateLayeredGraph(
     requiredPerBatch[node.id] = 0;
   }
 
-  // One full formula batch produces each final sink node's base quantity.
+  // One full formula batch produces each final output node's base quantity.
   for (const sink of sinkNodes) {
     requiredPerBatch[sink.id] += qty(sink.quantity);
   }
 
-  // Walk backward through the graph.
-  // If child needs X amount, each parent must provide:
-  // (X / child base quantity) * parent base quantity
+  // Work backward from final outputs through every layer.
   for (const childId of reverseOrdered) {
     const child = nodeById.get(childId);
     if (!child) continue;
@@ -134,13 +137,17 @@ function calculateLayeredGraph(
 
   let scale = Infinity;
 
-  for (const [label, value] of Object.entries(overrides)) {
-    const matchingNode = nodes.find((node) => node.label === label);
+  // Overrides can be on ANY node:
+  // source, intermediate, or final output.
+  for (const [label, rawValue] of Object.entries(overrides)) {
+    const overrideValue = Number(rawValue);
+    if (!Number.isFinite(overrideValue) || overrideValue < 0) continue;
 
+    const matchingNode = nodes.find((node) => node.label === label);
     if (!matchingNode) continue;
 
     const required = requiredPerBatch[matchingNode.id] || qty(matchingNode.quantity);
-    const factor = Math.floor(Number(value) / required);
+    const factor = Math.floor(overrideValue / required);
 
     if (factor < scale) {
       scale = factor;
@@ -163,10 +170,17 @@ function calculateLayeredGraph(
     nodeValues[node.id] = Math.floor((requiredPerBatch[node.id] || 0) * scale);
   }
 
-  for (const source of sourceNodes) {
-    used[source.label] = nodeValues[source.id] || 0;
+  // Used should include ALL required non-final nodes:
+  // source nodes + intermediate nodes.
+  for (const node of nodes) {
+    const isFinalOutput = sinkNodes.some((sink) => sink.id === node.id);
+
+    if (!isFinalOutput) {
+      used[node.label] = nodeValues[node.id] || 0;
+    }
   }
 
+  // Results only include final output nodes.
   for (const sink of sinkNodes) {
     results[sink.label] = nodeValues[sink.id] || 0;
   }

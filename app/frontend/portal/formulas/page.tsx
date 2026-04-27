@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import TopNav from "../../ui/TopNav";
 import styles from "./formulas.module.css";
@@ -29,8 +29,6 @@ type FormulaEdge = {
 
 type Formula = {
   id: string;
-  user_id?: string;
-  userId?: string;
   folder_id?: string | null;
   folderId?: string | null;
   name: string;
@@ -42,10 +40,6 @@ type Formula = {
     edges?: FormulaEdge[];
     [key: string]: any;
   };
-  created_at?: string;
-  updated_at?: string;
-  createdAt?: string;
-  updatedAt?: string;
 };
 
 type GetAllFormulasResponse = {
@@ -60,8 +54,6 @@ type CalculationResult = {
   used?: Record<string, number>;
   results?: Record<string, number>;
   nodeValues?: Record<string, number>;
-  sourceNodes?: string[];
-  sinkNodes?: string[];
   scale?: number;
   error?: string;
   message?: string;
@@ -85,8 +77,6 @@ type PanState = {
   originY: number;
 } | null;
 
-const WORLD_WIDTH = 2800;
-const WORLD_HEIGHT = 1800;
 const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 1.4;
 const ZOOM_STEP = 0.1;
@@ -97,24 +87,23 @@ function clamp(value: number, min: number, max: number) {
 
 export default function FormulasPage() {
   const router = useRouter();
-  const viewportRef = useRef<HTMLDivElement | null>(null);
 
   const [user, setUser] = useState<StoredUser | null>(null);
-  const [token, setToken] = useState<string>("");
+  const [token, setToken] = useState("");
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
-  const [selectedFormulaId, setSelectedFormulaId] = useState<string>("");
-  const [selectedFolder, setSelectedFolder] = useState<string>("all");
-
-  const [selectedCalcNodeId, setSelectedCalcNodeId] = useState<string | null>(null);
-  const [selectedOverrideValue, setSelectedOverrideValue] = useState<string>("");
+  const [selectedFormulaId, setSelectedFormulaId] = useState("");
+  const [selectedFolder, setSelectedFolder] = useState("all");
 
   const [calculating, setCalculating] = useState<Record<string, boolean>>({});
   const [calculationErrors, setCalculationErrors] = useState<Record<string, string>>({});
   const [calculationResults, setCalculationResults] = useState<Record<string, CalculationResult>>({});
+
+  const [overrideValues, setOverrideValues] = useState<Record<string, Record<string, string>>>({});
 
   const [canvasOffset, setCanvasOffset] = useState<CanvasOffset>({ x: 0, y: 0 });
   const [panState, setPanState] = useState<PanState>(null);
@@ -130,8 +119,7 @@ export default function FormulasPage() {
     }
 
     try {
-      const parsedUser = JSON.parse(rawUser) as StoredUser;
-      setUser(parsedUser);
+      setUser(JSON.parse(rawUser));
       setToken(rawToken);
     } catch {
       localStorage.removeItem("token");
@@ -146,8 +134,6 @@ export default function FormulasPage() {
   }, [user, token]);
 
   useEffect(() => {
-    setSelectedCalcNodeId(null);
-    setSelectedOverrideValue("");
     setCanvasOffset({ x: 0, y: 0 });
     setZoom(0.6);
   }, [selectedFormulaId]);
@@ -156,12 +142,9 @@ export default function FormulasPage() {
     function handlePointerMove(e: PointerEvent) {
       if (!panState) return;
 
-      const dx = e.clientX - panState.startX;
-      const dy = e.clientY - panState.startY;
-
       setCanvasOffset({
-        x: panState.originX + dx,
-        y: panState.originY + dy,
+        x: panState.originX + (e.clientX - panState.startX),
+        y: panState.originY + (e.clientY - panState.startY),
       });
     }
 
@@ -184,7 +167,6 @@ export default function FormulasPage() {
 
     try {
       const res = await fetch(`/backend/api/formulas/getAllFormulas/${userId}`, {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${bearerToken}`,
         },
@@ -213,7 +195,7 @@ export default function FormulasPage() {
   }
 
   async function handleDeleteFormula(formulaId: string) {
-    if (!token || !user) return;
+    if (!user || !token) return;
 
     setDeleteError("");
 
@@ -225,66 +207,46 @@ export default function FormulasPage() {
         },
       });
 
-      const text = await res.text();
-      let data: any = null;
-
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = { error: text || "Invalid server response" };
-      }
-
       if (!res.ok) {
+        const data = await res.json();
         setDeleteError(data?.error || data?.message || "Failed to delete formula");
         return;
       }
 
       await loadFormulas(user.id, token);
-      if (selectedFormulaId === formulaId) {
-        setSelectedFormulaId("");
-      }
     } catch (err: any) {
       setDeleteError(err?.message || "Failed to delete formula");
     }
   }
 
-  async function handleCalculate(formulaId: string) {
-    setCalculationErrors((prev) => ({ ...prev, [formulaId]: "" }));
-    setCalculating((prev) => ({ ...prev, [formulaId]: true }));
+  async function handleCalculate(formula: Formula) {
+    setCalculationErrors((prev) => ({ ...prev, [formula.id]: "" }));
+    setCalculating((prev) => ({ ...prev, [formula.id]: true }));
 
     try {
-      let inputs: Record<string, number> = {};
+      const formulaOverrides = overrideValues[formula.id] || {};
+      const inputs: Record<string, number> = {};
 
-      if (selectedCalcNodeId && selectedOverrideValue !== "") {
-        const selectedNode =
-          selectedFormula?.data?.nodes?.find((node) => node.id === selectedCalcNodeId) || null;
+      for (const node of formula.data?.nodes || []) {
+        const rawValue = formulaOverrides[node.id];
 
-        if (!selectedNode) {
-          setCalculationErrors((prev) => ({
-            ...prev,
-            [formulaId]: "Select a node first",
-          }));
-          setCalculating((prev) => ({ ...prev, [formulaId]: false }));
-          return;
-        }
+        if (rawValue === undefined || rawValue === "") continue;
 
-        const parsedValue = Number(selectedOverrideValue);
+        const parsedValue = Number(rawValue);
 
         if (!Number.isFinite(parsedValue) || parsedValue < 0) {
           setCalculationErrors((prev) => ({
             ...prev,
-            [formulaId]: "Override value must be a valid non-negative number",
+            [formula.id]: "All edited values must be valid non-negative numbers",
           }));
-          setCalculating((prev) => ({ ...prev, [formulaId]: false }));
+          setCalculating((prev) => ({ ...prev, [formula.id]: false }));
           return;
         }
 
-        inputs = {
-          [selectedNode.label]: parsedValue,
-        };
+        inputs[node.label] = parsedValue;
       }
 
-      const res = await fetch(`/backend/api/formulas/calculateFormula/${formulaId}`, {
+      const res = await fetch(`/backend/api/formulas/calculateFormula/${formula.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -292,35 +254,40 @@ export default function FormulasPage() {
         body: JSON.stringify({ inputs }),
       });
 
-      const text = await res.text();
-      let data: CalculationResult | null = null;
-
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = { error: text || "Invalid server response" };
-      }
+      const data: CalculationResult = await res.json();
 
       if (!res.ok) {
         setCalculationErrors((prev) => ({
           ...prev,
-          [formulaId]: data?.error || data?.message || "Failed to calculate formula",
+          [formula.id]: data?.error || data?.message || "Failed to calculate formula",
         }));
         return;
       }
 
       setCalculationResults((prev) => ({
         ...prev,
-        [formulaId]: data || {},
+        [formula.id]: data,
       }));
     } catch (err: any) {
       setCalculationErrors((prev) => ({
         ...prev,
-        [formulaId]: err?.message || "Failed to calculate formula",
+        [formula.id]: err?.message || "Failed to calculate formula",
       }));
     } finally {
-      setCalculating((prev) => ({ ...prev, [formulaId]: false }));
+      setCalculating((prev) => ({ ...prev, [formula.id]: false }));
     }
+  }
+
+  function updateOverride(formulaId: string, nodeId: string, value: string) {
+    if (value !== "" && !/^\d+$/.test(value)) return;
+
+    setOverrideValues((prev) => ({
+      ...prev,
+      [formulaId]: {
+        ...(prev[formulaId] || {}),
+        [nodeId]: value,
+      },
+    }));
   }
 
   const folderGroups = useMemo<FolderGroup[]>(() => {
@@ -355,10 +322,8 @@ export default function FormulasPage() {
 
   useEffect(() => {
     if (filteredFormulas.length > 0) {
-      const exists = filteredFormulas.some((f) => f.id === selectedFormulaId);
-      if (!exists) {
-        setSelectedFormulaId(filteredFormulas[0].id);
-      }
+      const exists = filteredFormulas.some((formula) => formula.id === selectedFormulaId);
+      if (!exists) setSelectedFormulaId(filteredFormulas[0].id);
     }
   }, [filteredFormulas, selectedFormulaId]);
 
@@ -368,20 +333,16 @@ export default function FormulasPage() {
   function getNodeCenter(nodeId: string) {
     const node = selectedFormula?.data?.nodes?.find((n) => n.id === nodeId);
     if (!node) return null;
-    return { x: node.x + 88, y: node.y + 48 };
-  }
 
-  const selectedCalcNode =
-    selectedFormula?.data?.nodes?.find((node) => node.id === selectedCalcNodeId) || null;
-
-  function getNodeDisplayValue(node: FormulaNode) {
-    const calculation = selectedFormula ? calculationResults[selectedFormula.id] : null;
-    if (!calculation?.nodeValues) return null;
-    return calculation.nodeValues[node.id];
+    return {
+      x: node.x + 88,
+      y: node.y + 48,
+    };
   }
 
   function beginPan(e: React.PointerEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).dataset.role === "graph-node") return;
+    if ((e.target as HTMLElement).dataset.role === "node-input") return;
 
     setPanState({
       startX: e.clientX,
@@ -404,6 +365,10 @@ export default function FormulasPage() {
     setZoom(0.6);
   }
 
+  function getNodeCalculatedValue(formulaId: string, nodeId: string) {
+    return calculationResults[formulaId]?.nodeValues?.[nodeId];
+  }
+
   if (!user) {
     return <main className={styles.page}>Loading user...</main>;
   }
@@ -423,6 +388,7 @@ export default function FormulasPage() {
 
           <div className={styles.folderSection}>
             <p className={styles.sectionLabel}>Folders</p>
+
             <div className={styles.folderList}>
               {folderGroups.map((folder) => (
                 <button
@@ -500,6 +466,7 @@ export default function FormulasPage() {
                   >
                     Edit Formula
                   </Link>
+
                   <button
                     type="button"
                     className={styles.deleteButton}
@@ -515,35 +482,25 @@ export default function FormulasPage() {
                   <div className={styles.graphHeader}>
                     <div>
                       <h3>Formula Graph</h3>
-                      <p>Click a node to select it for override. Drag empty space to pan.</p>
+                      <p>Edit values directly in nodes, then calculate.</p>
                     </div>
 
                     <div className={styles.zoomControls}>
-                      <button type="button" onClick={zoomOut}>
-                        -
-                      </button>
+                      <button type="button" onClick={zoomOut}>-</button>
                       <span>{Math.round(zoom * 100)}%</span>
-                      <button type="button" onClick={zoomIn}>
-                        +
-                      </button>
-                      <button type="button" onClick={resetView}>
-                        Reset
-                      </button>
+                      <button type="button" onClick={zoomIn}>+</button>
+                      <button type="button" onClick={resetView}>Reset</button>
                     </div>
                   </div>
 
-                  <div
-                    ref={viewportRef}
-                    className={styles.graphViewport}
-                    onPointerDown={beginPan}
-                  >
+                  <div className={styles.graphViewport} onPointerDown={beginPan}>
                     <div
                       className={styles.graphWorld}
                       style={{
                         transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`,
                       }}
                     >
-                      <svg className={styles.edgeLayer} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`}>
+                      <svg className={styles.edgeLayer}>
                         {(selectedFormula.data?.edges || []).map((edge) => {
                           const from = getNodeCenter(edge.from);
                           const to = getNodeCenter(edge.to);
@@ -562,110 +519,63 @@ export default function FormulasPage() {
                         })}
                       </svg>
 
-                      {(selectedFormula.data?.nodes || []).length > 0 ? (
-                        (selectedFormula.data?.nodes || []).map((node) => {
-                          const displayValue = getNodeDisplayValue(node);
+                      {(selectedFormula.data?.nodes || []).map((node) => {
+                        const calculatedValue = getNodeCalculatedValue(selectedFormula.id, node.id);
+                        const editedValue = overrideValues[selectedFormula.id]?.[node.id] ?? "";
 
-                          return (
-                            <button
-                              key={node.id}
-                              type="button"
-                              data-role="graph-node"
-                              className={
-                                selectedCalcNodeId === node.id
-                                  ? `${styles.graphNode} ${styles.graphNodeSelected}`
-                                  : styles.graphNode
+                        return (
+                          <div
+                            key={node.id}
+                            data-role="graph-node"
+                            className={styles.graphNode}
+                            style={{
+                              left: `${node.x}px`,
+                              top: `${node.y}px`,
+                            }}
+                          >
+                            <div className={styles.graphNodeLabel}>{node.label}</div>
+
+                            <div className={styles.graphNodeBase}>
+                              Base: x{node.quantity ?? 1}
+                            </div>
+
+                            <input
+                              data-role="node-input"
+                              className={styles.nodeValueInput}
+                              type="number"
+                              min="0"
+                              placeholder="Have..."
+                              value={editedValue}
+                              onChange={(e) =>
+                                updateOverride(selectedFormula.id, node.id, e.target.value)
                               }
-                              style={{
-                                left: `${node.x}px`,
-                                top: `${node.y}px`,
-                              }}
-                              onClick={() => {
-                                setSelectedCalcNodeId(node.id);
-                                setSelectedOverrideValue("");
-                              }}
-                            >
-                              <div className={styles.graphNodeLabel}>{node.label}</div>
-                              <div className={styles.graphNodeQty}>
-                                x{node.quantity ?? ""}
+                            />
+
+                            {calculatedValue !== undefined ? (
+                              <div className={styles.graphNodeComputed}>
+                                Calc: {calculatedValue}
                               </div>
-                              {displayValue !== null && displayValue !== undefined ? (
-                                <div className={styles.graphNodeComputed}>
-                                  = {displayValue}
-                                </div>
-                              ) : null}
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className={styles.graphFallback}>
-                          No saved graph nodes yet.
-                        </div>
-                      )}
+                            ) : null}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
 
                 <div className={styles.sideCards}>
                   <div className={styles.infoCard}>
-                    <h3>Derived Source Nodes</h3>
-                    {(calculationResults[selectedFormula.id]?.sourceNodes ||
-                      selectedFormula.data?.inputs?.map((i) => i.item) ||
-                      []).length > 0 ? (
-                      <ul>
-                        {(calculationResults[selectedFormula.id]?.sourceNodes ||
-                          selectedFormula.data?.inputs?.map((i) => i.item) ||
-                          []).map((item, index) => (
-                          <li key={`source-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>No source nodes</p>
-                    )}
-                  </div>
-
-                  <div className={styles.infoCard}>
-                    <h3>Derived Final Outputs</h3>
-                    {(calculationResults[selectedFormula.id]?.sinkNodes ||
-                      selectedFormula.data?.outputs?.map((o) => o.item) ||
-                      []).length > 0 ? (
-                      <ul>
-                        {(calculationResults[selectedFormula.id]?.sinkNodes ||
-                          selectedFormula.data?.outputs?.map((o) => o.item) ||
-                          []).map((item, index) => (
-                          <li key={`sink-${index}`}>{item}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>No final outputs</p>
-                    )}
-                  </div>
-
-                  <div className={styles.infoCard}>
                     <h3>Calculate Formula</h3>
 
-                    {selectedCalcNode ? (
-                      <div className={styles.overridePanel}>
-                        <p className={styles.overrideLabel}>
-                          Selected node: <strong>{selectedCalcNode.label}</strong>
-                        </p>
-
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="Override value"
-                          value={selectedOverrideValue}
-                          onChange={(e) => setSelectedOverrideValue(e.target.value)}
-                        />
-                      </div>
-                    ) : (
-                      <p>Select a graph node to set an override.</p>
-                    )}
+                    <p>
+                      Enter any values you have directly inside the nodes. The smallest usable
+                      amount controls the final calculation.
+                    </p>
 
                     <button
                       type="button"
                       className={styles.calcButton}
-                      onClick={() => handleCalculate(selectedFormula.id)}
+                      onClick={() => handleCalculate(selectedFormula)}
                       disabled={!!calculating[selectedFormula.id]}
                     >
                       {calculating[selectedFormula.id] ? "Calculating..." : "Calculate"}
@@ -683,34 +593,33 @@ export default function FormulasPage() {
                       </p>
                     ) : null}
 
-                    {calculationResults[selectedFormula.id]?.used ||
-                    calculationResults[selectedFormula.id]?.results ? (
+                    {calculationResults[selectedFormula.id]?.used ? (
                       <div className={styles.calcResults}>
-                        <div>
-                          <strong>Used</strong>
-                          <ul>
-                            {Object.entries(
-                              calculationResults[selectedFormula.id]?.used || {}
-                            ).map(([key, value]) => (
+                        <strong>Used</strong>
+                        <ul>
+                          {Object.entries(calculationResults[selectedFormula.id]?.used || {}).map(
+                            ([key, value]) => (
                               <li key={`used-${key}`}>
                                 {key}: {value}
                               </li>
-                            ))}
-                          </ul>
-                        </div>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
 
-                        <div>
-                          <strong>Results</strong>
-                          <ul>
-                            {Object.entries(
-                              calculationResults[selectedFormula.id]?.results || {}
-                            ).map(([key, value]) => (
+                    {calculationResults[selectedFormula.id]?.results ? (
+                      <div className={styles.calcResults}>
+                        <strong>Results</strong>
+                        <ul>
+                          {Object.entries(calculationResults[selectedFormula.id]?.results || {}).map(
+                            ([key, value]) => (
                               <li key={`result-${key}`}>
                                 {key}: {value}
                               </li>
-                            ))}
-                          </ul>
-                        </div>
+                            )
+                          )}
+                        </ul>
                       </div>
                     ) : null}
                   </div>
