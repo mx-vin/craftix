@@ -16,59 +16,37 @@ type GraphEdge = {
   to: string;
 };
 
-type FormulaData = {
-  nodes?: GraphNode[];
-  edges?: GraphEdge[];
-  inputs?: { item: string; quantity?: number }[];
-  outputs?: { item: string; quantity?: number }[];
-  [key: string]: any;
-};
-
 type FormulaRow = {
   id: string;
-  name: string;
-  description: string | null;
-  data: FormulaData | null;
+  data: {
+    nodes?: GraphNode[];
+    edges?: GraphEdge[];
+    [key: string]: any;
+  } | null;
 };
 
-function toPositiveNumber(value: unknown) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function buildIncomingMap(nodes: GraphNode[], edges: GraphEdge[]) {
-  const incoming = new Map<string, GraphEdge[]>();
-  for (const node of nodes) incoming.set(node.id, []);
-  for (const edge of edges) {
-    if (!incoming.has(edge.to)) incoming.set(edge.to, []);
-    incoming.get(edge.to)!.push(edge);
-  }
-  return incoming;
-}
-
-function buildOutgoingMap(nodes: GraphNode[], edges: GraphEdge[]) {
-  const outgoing = new Map<string, GraphEdge[]>();
-  for (const node of nodes) outgoing.set(node.id, []);
-  for (const edge of edges) {
-    if (!outgoing.has(edge.from)) outgoing.set(edge.from, []);
-    outgoing.get(edge.from)!.push(edge);
-  }
-  return outgoing;
+function qty(value: unknown) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
 function topoSort(nodes: GraphNode[], edges: GraphEdge[]) {
   const incomingCount = new Map<string, number>();
-  const outgoing = buildOutgoingMap(nodes, edges);
+  const outgoing = new Map<string, string[]>();
 
-  for (const node of nodes) incomingCount.set(node.id, 0);
+  for (const node of nodes) {
+    incomingCount.set(node.id, 0);
+    outgoing.set(node.id, []);
+  }
+
   for (const edge of edges) {
     incomingCount.set(edge.to, (incomingCount.get(edge.to) || 0) + 1);
+    outgoing.get(edge.from)?.push(edge.to);
   }
 
-  const queue: string[] = [];
-  for (const node of nodes) {
-    if ((incomingCount.get(node.id) || 0) === 0) queue.push(node.id);
-  }
+  const queue = nodes
+    .filter((node) => (incomingCount.get(node.id) || 0) === 0)
+    .map((node) => node.id);
 
   const ordered: string[] = [];
 
@@ -76,47 +54,96 @@ function topoSort(nodes: GraphNode[], edges: GraphEdge[]) {
     const current = queue.shift()!;
     ordered.push(current);
 
-    for (const edge of outgoing.get(current) || []) {
-      const next = edge.to;
+    for (const next of outgoing.get(current) || []) {
       incomingCount.set(next, (incomingCount.get(next) || 0) - 1);
-      if ((incomingCount.get(next) || 0) === 0) queue.push(next);
+
+      if ((incomingCount.get(next) || 0) === 0) {
+        queue.push(next);
+      }
     }
   }
-
-  return ordered;
-}
-
-function calculateGraphFormula(
-  nodes: GraphNode[],
-  edges: GraphEdge[],
-  overrides: Record<string, number>
-) {
-  const nodeById = new Map(nodes.map((n) => [n.id, n]));
-  const incoming = buildIncomingMap(nodes, edges);
-  const outgoing = buildOutgoingMap(nodes, edges);
-  const ordered = topoSort(nodes, edges);
 
   if (ordered.length !== nodes.length) {
     throw new Error("Formula graph contains a cycle");
   }
 
-  const sourceNodes = nodes.filter((n) => (incoming.get(n.id) || []).length === 0);
-  const sinkNodes = nodes.filter((n) => (outgoing.get(n.id) || []).length === 0);
+  return ordered;
+}
 
-  if (sourceNodes.length === 0 || sinkNodes.length === 0) {
-    throw new Error("Formula graph must have at least one source node and one sink node");
+function calculateLayeredGraph(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  overrides: Record<string, number>
+) {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+  const incoming = new Map<string, GraphEdge[]>();
+  const outgoing = new Map<string, GraphEdge[]>();
+
+  for (const node of nodes) {
+    incoming.set(node.id, []);
+    outgoing.set(node.id, []);
   }
 
-  // Determine full-batch scale from source overrides
+  for (const edge of edges) {
+    incoming.get(edge.to)?.push(edge);
+    outgoing.get(edge.from)?.push(edge);
+  }
+
+  const ordered = topoSort(nodes, edges);
+  const reverseOrdered = [...ordered].reverse();
+
+  const sourceNodes = nodes.filter((node) => (incoming.get(node.id) || []).length === 0);
+  const sinkNodes = nodes.filter((node) => (outgoing.get(node.id) || []).length === 0);
+
+  if (sourceNodes.length === 0 || sinkNodes.length === 0) {
+    throw new Error("Formula must have at least one source node and one final output node");
+  }
+
+  const requiredPerBatch: Record<string, number> = {};
+
+  for (const node of nodes) {
+    requiredPerBatch[node.id] = 0;
+  }
+
+  // One full formula batch produces each final sink node's base quantity.
+  for (const sink of sinkNodes) {
+    requiredPerBatch[sink.id] += qty(sink.quantity);
+  }
+
+  // Walk backward through the graph.
+  // If child needs X amount, each parent must provide:
+  // (X / child base quantity) * parent base quantity
+  for (const childId of reverseOrdered) {
+    const child = nodeById.get(childId);
+    if (!child) continue;
+
+    const childRequired = requiredPerBatch[childId] || 0;
+    if (childRequired <= 0) continue;
+
+    const childBase = qty(child.quantity);
+    const childBatches = childRequired / childBase;
+
+    for (const edge of incoming.get(childId) || []) {
+      const parent = nodeById.get(edge.from);
+      if (!parent) continue;
+
+      requiredPerBatch[parent.id] += childBatches * qty(parent.quantity);
+    }
+  }
+
   let scale = Infinity;
 
-  for (const source of sourceNodes) {
-    const baseQty = toPositiveNumber(source.quantity);
-    const overrideValue = overrides[source.label];
+  for (const [label, value] of Object.entries(overrides)) {
+    const matchingNode = nodes.find((node) => node.label === label);
 
-    if (overrideValue !== undefined) {
-      const factor = Math.floor(overrideValue / baseQty);
-      if (factor < scale) scale = factor;
+    if (!matchingNode) continue;
+
+    const required = requiredPerBatch[matchingNode.id] || qty(matchingNode.quantity);
+    const factor = Math.floor(Number(value) / required);
+
+    if (factor < scale) {
+      scale = factor;
     }
   }
 
@@ -124,53 +151,24 @@ function calculateGraphFormula(
     scale = 1;
   }
 
-  if (scale < 0) scale = 0;
+  if (scale < 0) {
+    scale = 0;
+  }
 
-  // Node values hold the scaled amount represented by each node
   const nodeValues: Record<string, number> = {};
   const used: Record<string, number> = {};
   const results: Record<string, number> = {};
 
-  // Sources are directly scaled
-  for (const source of sourceNodes) {
-    const qty = toPositiveNumber(source.quantity) * scale;
-    nodeValues[source.id] = qty;
-    used[source.label] = qty;
+  for (const node of nodes) {
+    nodeValues[node.id] = Math.floor((requiredPerBatch[node.id] || 0) * scale);
   }
 
-  // Process downstream nodes
-  for (const nodeId of ordered) {
-    const node = nodeById.get(nodeId)!;
-    const incomingEdges = incoming.get(nodeId) || [];
-
-    if (incomingEdges.length === 0) continue;
-
-    const nodeBaseQty = toPositiveNumber(node.quantity);
-
-    // For a node to be producible, every parent must be available.
-    // Each incoming parent contributes batches based on parent amount / parent base quantity.
-    let possibleBatches = Infinity;
-
-    for (const edge of incomingEdges) {
-      const parent = nodeById.get(edge.from)!;
-      const parentValue = nodeValues[parent.id] ?? 0;
-      const parentBaseQty = toPositiveNumber(parent.quantity);
-
-      const parentBatches = Math.floor(parentValue / parentBaseQty);
-      if (parentBatches < possibleBatches) {
-        possibleBatches = parentBatches;
-      }
-    }
-
-    if (!Number.isFinite(possibleBatches) || possibleBatches < 0) {
-      possibleBatches = 0;
-    }
-
-    nodeValues[node.id] = possibleBatches * nodeBaseQty;
+  for (const source of sourceNodes) {
+    used[source.label] = nodeValues[source.id] || 0;
   }
 
   for (const sink of sinkNodes) {
-    results[sink.label] = nodeValues[sink.id] ?? 0;
+    results[sink.label] = nodeValues[sink.id] || 0;
   }
 
   return {
@@ -178,8 +176,9 @@ function calculateGraphFormula(
     used,
     results,
     nodeValues,
-    sourceNodes: sourceNodes.map((n) => n.label),
-    sinkNodes: sinkNodes.map((n) => n.label),
+    requiredPerBatch,
+    sourceNodes: sourceNodes.map((node) => node.label),
+    sinkNodes: sinkNodes.map((node) => node.label),
   };
 }
 
@@ -201,7 +200,7 @@ export async function POST(
     const overrides: Record<string, number> = body.inputs || {};
 
     const rows = await sql<FormulaRow[]>`
-      SELECT id, name, description, data
+      SELECT id, data
       FROM formulas
       WHERE id = ${id}::uuid
       LIMIT 1
@@ -216,8 +215,8 @@ export async function POST(
       );
     }
 
-    const nodes = Array.isArray(formula.data?.nodes) ? formula.data!.nodes! : [];
-    const edges = Array.isArray(formula.data?.edges) ? formula.data!.edges! : [];
+    const nodes = Array.isArray(formula.data?.nodes) ? formula.data.nodes : [];
+    const edges = Array.isArray(formula.data?.edges) ? formula.data.edges : [];
 
     if (nodes.length === 0) {
       return NextResponse.json(
@@ -226,22 +225,31 @@ export async function POST(
       );
     }
 
-    const calculation = calculateGraphFormula(nodes, edges, overrides);
+    if (edges.length === 0) {
+      return NextResponse.json(
+        { error: "Formula has no graph connections" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const calculation = calculateLayeredGraph(nodes, edges, overrides);
 
     return NextResponse.json(
       {
         success: true,
+        scale: calculation.scale,
         used: calculation.used,
         results: calculation.results,
         nodeValues: calculation.nodeValues,
+        requiredPerBatch: calculation.requiredPerBatch,
         sourceNodes: calculation.sourceNodes,
         sinkNodes: calculation.sinkNodes,
-        scale: calculation.scale,
       },
       { status: 200, headers: corsHeaders }
     );
   } catch (err: any) {
     console.error("Calculate formula error:", err);
+
     return NextResponse.json(
       {
         error: "Server error",
@@ -250,4 +258,8 @@ export async function POST(
       { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
