@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
-  background: #8a7866;
-  color: #544137;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .dark {
@@ -14,11 +14,11 @@
 }
 
 .profileCard {
-  background: #fceedb;
-  color: #544137;
+  background: var(--panel);
+  color: var(--text);
   border-radius: 28px;
   padding: 28px;
-  border: 1px solid rgba(84, 65, 55, 0.12);
+  border: 1px solid var(--border);
   max-width: 760px;
 }
 
@@ -38,7 +38,7 @@
 }
 
 .infoBox {
-  background: #fff7ef;
+  background: var(--input-bg);
   border-radius: 18px;
   padding: 18px;
   margin-bottom: 20px;
@@ -64,7 +64,7 @@
 .saveButton,
 .toggleButton {
   background: #f6afc4;
-  color: #544137;
+  color: var(--text);
 }
 
 .logoutButton {
@@ -73,8 +73,8 @@
 }
 
 .dark .logoutButton {
-  background: #fceedb;
-  color: #544137;
+  background: var(--panel);
+  color: var(--text);
 }
 
 .deleteButton {
@@ -101,8 +101,8 @@
 .modal {
   width: 100%;
   max-width: 520px;
-  background: #fceedb;
-  color: #544137;
+  background: var(--panel);
+  color: var(--text);
   border-radius: 28px;
   padding: 24px;
   box-shadow: 0 24px 60px rgba(44, 33, 28, 0.3);
@@ -133,7 +133,7 @@
 }
 
 .settingRow {
-  background: #fff7ef;
+  background: var(--input-bg);
   border-radius: 18px;
   padding: 16px;
   display: flex;
@@ -169,11 +169,11 @@
 }
 
 .field input {
-  background: #fff7ef;
+  background: var(--input-bg);
   border: 1px solid rgba(84, 65, 55, 0.15);
   border-radius: 14px;
   padding: 12px 14px;
-  color: #544137;
+  color: var(--text);
 }
 
 .dark .field input {

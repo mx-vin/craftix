@@ -12,4 +12,50 @@
   --border-soft: #c9b59f;
   --input-bg: #ece9e8;
   --danger-soft: #d98e8e;
+}:root {
+  --bg: #8a7866;
+  --panel: #fceedb;
+  --panel-soft: rgba(252, 238, 219, 0.72);
+  --text: #544137;
+  --accent: #f6afc4;
+  --input-bg: #fff7ef;
+  --danger: #8b1e48;
+  --success: #157347;
+  --border: rgba(84, 65, 55, 0.14);
+  --shadow: rgba(84, 65, 55, 0.14);
+}
+
+html.dark {
+  --bg: #2c211c;
+  --panel: #544137;
+  --panel-soft: rgba(84, 65, 55, 0.78);
+  --text: #fceedb;
+  --accent: #f6afc4;
+  --input-bg: #3b2d27;
+  --danger: #f6afc4;
+  --success: #b8e6c6;
+  --border: rgba(252, 238, 219, 0.18);
+  --shadow: rgba(0, 0, 0, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
 }

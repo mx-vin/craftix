@@ -55,11 +55,18 @@ export default function ProfilePage() {
     }
   }, [router]);
 
-  function toggleDarkMode() {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem("craftix-dark-mode", String(next));
+function toggleDarkMode() {
+  const next = !darkMode;
+
+  setDarkMode(next);
+  localStorage.setItem("craftix-dark-mode", String(next));
+
+  if (next) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
   }
+}
 
   function handleLogout() {
     localStorage.removeItem("token");
@@ -160,7 +167,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className={darkMode ? `${styles.page} ${styles.dark}` : styles.page}>
+    <main className={styles.page}>
       <TopNav />
 
       <section className={styles.shell}>

@@ -1,12 +1,12 @@
 .header {
   height: 78px;
-  background: #fceedb;
-  color: #544137;
+  background: var(--panel);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  border-bottom: 1px solid rgba(84, 65, 55, 0.18);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -27,7 +27,7 @@
 .logout {
   border: 0;
   background: transparent;
-  color: #544137;
+  color: var(--text);
   text-decoration: none;
   padding: 12px 18px;
   border-radius: 16px;
@@ -36,12 +36,18 @@
 }
 
 .active {
-  background: #f6afc4;
+  background: var(--accent);
+  color: var(--text);
 }
 
 .logout {
-  background: #544137;
-  color: #fceedb;
+  background: var(--text);
+  color: var(--panel);
+}
+
+html.dark .logout {
+  background: var(--accent);
+  color: var(--text);
 }
 
 @media (max-width: 900px) {

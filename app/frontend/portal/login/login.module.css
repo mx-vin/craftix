@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: #8a7866;
+  background: var(--bg);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -9,11 +9,11 @@
 .card {
   width: 100%;
   max-width: 430px;
-  background: #fceedb;
-  color: #544137;
+  background: var(--panel);
+  color: var(--text);
   border-radius: 28px;
   padding: 32px;
-  border: 1px solid rgba(84, 65, 55, 0.12);
+  border: 1px solid var(--border);
   box-shadow: 0 12px 24px rgba(84, 65, 55, 0.14);
 }
 
@@ -51,11 +51,11 @@
 }
 
 .field input {
-  background: #fff7ef;
+  background: var(--input-bg);
   border: 1px solid rgba(84, 65, 55, 0.15);
   border-radius: 14px;
   padding: 12px 14px;
-  color: #544137;
+  color: var(--text);
 }
 
 .submit {
@@ -64,7 +64,7 @@
   border-radius: 16px;
   padding: 12px 16px;
   background: #f6afc4;
-  color: #544137;
+  color: var(--text);
   font-weight: 700;
   cursor: pointer;
 }
@@ -84,6 +84,6 @@
 }
 
 .link {
-  color: #544137;
+  color: var(--text);
   font-weight: 700;
 }
