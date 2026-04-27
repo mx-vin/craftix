@@ -174,7 +174,6 @@ function toggleDarkMode() {
         <div className={styles.profileCard}>
           <div>
             <h1 className={styles.title}>Profile</h1>
-            <p className={styles.subtitle}>Simple profile placeholder.</p>
           </div>
 
           <div className={styles.infoBox}>

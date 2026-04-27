@@ -21,7 +21,7 @@ Content-Type: application/json
 
 ### Get Formula
 GET http://localhost:3000/backend/api/formulas/getFormula/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUzOTZhYmZkLWVhYWItNDFlZC1hMTM5LTJmZGMyMGVmZGY2NyIsImVtYWlsIjoiYWxpY2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzM5NjM2NDYsImV4cCI6MTc3Mzk2NzI0Nn0.JDAoZ0Z0FHbCfZIjAPL2doy13xFgJqeXRKGGhO43RsU
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
 Content-Type: application/json
 
 ### Update formula variables

@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:3000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+@userId = c2e30f62-74e6-4f4b-9b65-925f554b0bee
+@formulaId = 33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+@folderId = PASTE_CREATED_FOLDER_ID_HERE
+
+### Get all folders for user
+GET http://localhost:3000/backend/api/folders/getAllFolders/c2e30f62-74e6-4f4b-9b65-925f554b0bee
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+
+
+
+### Create folder
+POST http://localhost:3000/backend/api/folders/createFolder
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+
+{
+  "name": "Minecraft Formulas"
+}
+
+
+### Update folder name
+PUT http://localhost:3000/backend/api/folders/updateFolder/{{folderId}}
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+
+{
+  "name": "Updated Folder Name"
+}
+
+
+### Move formula into folder
+PUT http://localhost:3000/backend/api/formulas/moveFormulaToFolder/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+
+{
+  "folderId": "{{folderId}}"
+}
+
+
+### Move formula back to Ungrouped
+PUT http://localhost:3000/backend/api/formulas/moveFormulaToFolder/33a89f98-2c6f-4b3e-bc4a-2ce35f7917a9
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94
+
+{
+  "folderId": null
+}
+
+
+### Delete folder
+DELETE http://localhost:3000/backend/api/folders/deleteFolder/{{folderId}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMyZTMwZjYyLTc0ZTYtNGY0Yi05YjY1LTkyNWY1NTRiMGJlZSIsImVtYWlsIjoidGVzdHRlc3QyQGdtYWlsLmNvbSIsImlhdCI6MTc3NzI4NzAyNSwiZXhwIjoxNzc3MjkwNjI1fQ.r-r06j73qTw2hlzxEMIrcu4r3wXA0GDOLLjZNFSPs94

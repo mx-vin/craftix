@@ -1,0 +1,41 @@
+import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+import sql from "../../../utilities/db";
+import { corsHeaders } from "../../../utilities/cors";
+
+function verifyToken(req: Request) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+
+  try {
+    return jwt.verify(authHeader.split(" ")[1], process.env.ACCESS_TOKEN_SECRET!) as {
+      id: string;
+      email: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(req: Request, ctx: { params: Promise<{ userId: string }> }) {
+  try {
+    const { userId } = await ctx.params;
+    const user = verifyToken(req);
+
+    if (!user || user.id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+    }
+
+    const folders = await sql`
+      SELECT id, user_id, name, created_at
+      FROM folders
+      WHERE user_id = ${userId}::uuid
+      ORDER BY created_at ASC
+    `;
+
+    return NextResponse.json({ success: true, folders }, { status: 200, headers: corsHeaders });
+  } catch (err) {
+    console.error("getAllFolders error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500, headers: corsHeaders });
+  }
+}
