@@ -26,15 +26,11 @@ export default function TopNav() {
         <Link href="/frontend/portal/formulas" className={linkClass("/frontend/portal/formulas")}>
           Home
         </Link>
-        <Link href="/frontend/portal/marketplace" className={linkClass("/frontend/portal/marketplace")}>
-          Marketplace
-        </Link>
+
         <Link href="/frontend/portal/profile" className={linkClass("/frontend/portal/profile")}>
           Profile
         </Link>
-        <Link href="/frontend/portal/settings" className={linkClass("/frontend/portal/settings")}>
-          Settings
-        </Link>
+
         <button type="button" className={styles.logout} onClick={handleLogout}>
           Logout
         </button>
